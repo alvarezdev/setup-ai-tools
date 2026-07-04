@@ -13,66 +13,52 @@ description: >-
 
 # Commit Style Skill
 
-## Purpose
+Turn a finished change into a precise, traceable commit message in Conventional
+Commits style: a short imperative English title and a body of concrete bullets,
+grounded entirely in the real diff. Works in any repository (mobile, frontend,
+backend, scripts, CI, docs, infra, tooling, libraries).
 
-Generate precise, consistent, and traceable commit message proposals from the
-actual repository state.
+## Principles
 
-The style favors:
+The rules below all follow from a few ideas. Understanding the why makes the
+judgment calls easier than memorizing commands.
 
-- Conventional Commit prefix.
-- Short English title with an imperative verb.
-- Clear technical scope.
-- Body with concrete bullet points.
-- Explicit validation only when there is evidence it ran.
-- Documentation, security, and compatibility notes when they apply.
+**Ground every claim in the real diff.** A commit message is read far more often
+than it is written: in `git blame`, in `git bisect`, in review months later. A
+message that describes something the diff does not contain is worse than none,
+because it sends the next person down the wrong path. So inspect the actual diff
+first and describe only what it shows. Never describe intended or remembered
+work.
 
-It is not coupled to any specific project, framework, language, platform,
-author, or source example.
+**Default to the safe, reversible action.** Proposing a message costs nothing
+and is easy to discard; running `git commit`, and especially `git push`, is not.
+Whether and when to commit belongs to the project's Git policy or to the user,
+not to this skill. So by default, only propose the message. Commit locally only
+when a project policy (for example a documented checkpoint rule) or the user
+explicitly authorizes it, and never push, deploy, tag, or open PRs unless asked
+explicitly.
 
----
+**Never claim validation that did not happen.** "Tests pass" or "build succeeds"
+in a body is a factual claim others rely on to merge or deploy. If it was not
+actually run, it is a lie that compounds downstream. Mention tests, build, lint,
+typecheck, emulator, or manual checks only with real evidence they ran;
+otherwise say plainly you could not verify them.
 
-## Non-negotiable rules
+**One commit is one coherent change.** A commit is the unit of review and of
+revert. When unrelated work rides together, a reviewer cannot approve one part
+without the other, and reverting a bug fix also reverts a feature. Keep a single
+commit to one coherent change set; if the diff mixes unrelated work, say so and
+propose splitting it.
 
-1. Do not invent changes. Inspect the actual repository state before proposing a
-   commit (see "Inspect the repository state").
+**Be specific, not generic.** The title is what people scan in a long log.
+`fix: Update things` tells them nothing and forces them to open the diff. Name
+the concrete surface that changed.
 
-2. Do not run repository-changing Git actions by default.
-   - No `git push`.
-   - No branches, tags, releases, or pull requests.
-   - No deploy or publish.
-   - Run local `git commit` only when the project Git policy explicitly requires
-     a checkpoint after a completed and validated step, or when the user
-     explicitly authorizes it. If no policy authorizes it, only propose the
-     message.
+## Workflow
 
-3. Keep all work local unless the user explicitly authorizes remote actions.
+### 1. Inspect the real repository state
 
-4. Write commit titles and bodies in English, unless the user explicitly asks
-   for another language. Responses to the user follow the user's language (see
-   "Language").
-
-5. Prefer precision over generic wording.
-   - Good: `feat: Implement child profile selector`
-   - Good: `refactor: Move payment validation into service`
-   - Good: `fix: Harden image upload validation`
-   - Avoid: `feat: Improve app`
-   - Avoid: `fix: Update things`
-
-6. One commit represents one coherent change set. Do not mix unrelated features,
-   refactors, tests, docs, and operational changes unless they directly support
-   the same change.
-
-7. Do not claim validation happened unless there is evidence. Only mention
-   tests, build, lint, typecheck, emulator, simulator, browser, or manual
-   validation when it was actually run or clearly shown in context.
-
----
-
-## Inspect the repository state
-
-Always run this before proposing or creating a commit. Referenced from every
-mode below:
+Always run this before proposing or creating a commit:
 
 ```bash
 git status --short
@@ -81,277 +67,122 @@ git diff --name-only
 git diff
 ```
 
-Then read relevant files when the diff alone is not enough to describe intent.
+Read the relevant changed files when the diff alone does not make the intent
+clear.
 
----
+### 2. Decide the type
 
-## Default commit title style
+Pick the one type that captures the main point of the change:
 
-### Format
+- `feat`: adds new behavior or capability (screen, endpoint, flow, CLI command,
+  user-visible behavior).
+- `fix`: corrects a bug, security hole, invalid state, unsafe path, exposed
+  data, broken UI, or failed validation.
+- `refactor`: changes internal structure while preserving external behavior
+  (moving logic into modules, services, hooks, providers, widgets, helpers;
+  introducing DI or explicit types without new behavior).
+- `chore`: configuration, tooling, dependencies, local setup, scripts, secrets
+  handling, environment config, or operational maintenance.
+- `test`: the main change is test coverage (unit, widget, integration, e2e).
+- `ci`: the main change is a workflow or pipeline.
+- `docs`: the main change is documentation only.
+
+Special case, only for the very first commit of a new repository:
+`Initial commit: <short baseline description>`.
+
+### 3. Write the title
+
+Format:
 
 ```text
 <type>: <Imperative verb> <technical scope> <result or intent>
 ```
 
-Examples:
+- Start the description with an imperative verb: Add, Apply, Configure, Create,
+  Enforce, Extract, Harden, Implement, Introduce, Move, Prevent, Protect,
+  Remove, Restructure, Set up, Split, Update, Upgrade, Validate.
+- Name a concrete surface: Authentication, Dashboard, API client, Data layer,
+  Repository, Form validation, Image upload, Error handling, CI workflow, README.
+- No trailing period.
+- Avoid empty titles like `update stuff`, `changes`, `fix bugs`,
+  `improve project`, `misc`, `wip`.
 
-```text
-feat: Implement user onboarding flow
-feat: Add child profile selector
-fix: Harden image upload validation
-fix: Prevent duplicate form submissions
-refactor: Split authentication module by responsibility
-chore: Configure environment variables for local development
-test: Add integration tests for login flow
-ci: Add pull request validation workflow
-docs: Update setup guide with local development steps
-```
+Good: `feat: Implement child profile selector`,
+`refactor: Move payment validation into service`,
+`fix: Harden image upload validation`.
 
-### Allowed commit types
+### 4. Write the body
 
-- `feat`: new functional behavior or capability.
-- `fix`: bug fix, security hardening, unsafe or incorrect behavior correction.
-- `refactor`: internal structure change without changing external behavior.
-- `chore`: configuration, runtime, tooling, dependency management, local setup,
-  maintenance, or operational setup.
-- `test`: test coverage (unit, widget, integration, rules, e2e).
-- `ci`: validation workflow, build automation, pipeline changes.
-- `docs`: documentation-only changes.
-
-Special case, only for the first commit of a new repository:
-
-```text
-Initial commit: <short baseline description>
-```
-
----
-
-## Title wording rules
-
-### Use imperative verbs
-
-```text
-Add        Apply      Configure  Create     Enforce
-Extract    Harden     Implement  Introduce  Move
-Prepare    Prevent    Protect    Remove     Restructure
-Set up     Split      Update     Upgrade    Use        Validate
-```
-
-### Keep titles specific
-
-Name the domain, feature, layer, module, or technical surface: Authentication,
-Dashboard, Navigation, Design system, API client, Data layer, Repository, State
-management, Form validation, Image upload, Error handling, Environment config,
-CI workflow, README.
-
-### Avoid vague titles
-
-Do not use: `update stuff`, `changes`, `fix bugs`, `improve project`,
-`frontend changes`, `final changes`, `misc`, `wip`.
-
-### No trailing period
-
-- Good: `refactor: Move auth logic into module`
-- Avoid: `refactor: Move auth logic into module.`
-
----
-
-## Commit body style
-
-### Default body format
-
-Bullet points starting with `- `. Each bullet starts with an imperative verb and
-describes one concrete change.
-
-```text
-<type>: <Imperative title>
-
-- Add ...
-- Move ...
-- Protect ...
-- Validate ...
-- Document ...
-```
-
-### Body length
-
-- 4 to 9 bullets for normal commits.
-- 2 to 4 bullets for very small commits.
-- 8 to 10 bullets for large but coherent commits.
-
-### Body content order
+Bullets starting with `- `, each beginning with an imperative verb and
+describing one concrete change. Order them so the most important change reads
+first:
 
 1. Main implementation change.
 2. Supporting structural changes.
-3. Security, validation, or error handling behavior.
+3. Security, validation, or error-handling behavior.
 4. Compatibility or preserved behavior.
-5. Tests, build, lint, or manual validation if actually performed.
+5. Tests, build, lint, or manual validation (only if actually performed).
 6. Documentation updates.
 
-### Common body patterns
+Length: 2 to 4 bullets for small commits, 4 to 9 for normal ones, up to about 10
+for a large but coherent change. Every bullet must answer at least one of: what
+was added, moved, extracted, protected, enforced, preserved, validated, or
+documented. Drop any bullet the diff does not back up.
 
-Use only when they match the actual diff:
+Full worked examples per project type (mobile, frontend, backend, scripts, CI,
+docs) live in `references/examples.md`. Read that file when you want a concrete
+template to adapt.
 
-```text
-- Add <module/service/repository/helper> for <purpose>
-- Implement <flow/screen/endpoint/operation> with <technology>
-- Move <logic> into <module/layer>
-- Extract <concern> into <helper/service/repository>
-- Protect <resource/route/endpoint/screen> with <auth/rules/role>
-- Harden <validation/upload/path/auth/form> behavior
-- Prevent <bug/duplicate action/invalid state>
-- Keep <existing behavior/export/endpoint/screen> unchanged
-- Add <test type> coverage for <scenario>
-- Validate <lint/build/tests/integration/manual flow>
-- Document <flow/setup/checklist> in the README
-```
+### 5. Check grouping before finalizing
 
-Full worked examples per project type live in `references/examples.md`. Load
-that file when you need a concrete template to adapt.
-
----
+Confirm the change set is coherent: the files support one goal, the title covers
+the whole diff, and the body hides nothing unrelated. If the diff mixes
+unrelated work, do not force it into one message; propose splitting it into
+separate commits.
 
 ## Operating modes
 
-### Proposal mode (default)
+**Proposal mode (default).** No project Git policy authorizes commits: inspect
+the diff and propose a message, without staging or committing.
 
-Use when no project Git policy authorizes commits. Inspect the diff and propose a
-message without staging or committing.
+**Local checkpoint commit mode.** Only when the project Git policy or the user
+explicitly allows a local commit. First confirm the work is complete, coherent,
+free of secrets and unrelated files, and that validation either ran or is
+clearly flagged as unverified. Then stage only the relevant files and commit:
 
-### Local checkpoint commit mode
+```bash
+git add <relevant-files>
+git commit -m "<type>: <imperative title>" -m "- <actual change>" -m "- <actual change>"
+```
 
-Use only when the project Git policy explicitly allows local commits. Before
-committing, the work must be complete, validated, coherent, free of secrets, and
-limited to one logical change set. Never push after committing unless the user
-explicitly asks.
+Report the title and the validation result. Never push afterward unless asked.
 
----
+## Output
 
-## How to propose a commit after work is done
-
-1. Run the inspection block ("Inspect the repository state") and read relevant
-   files when needed.
-2. Provide:
+Respond in the user's language (default Spanish for this user); keep commit
+titles and bodies in English unless the user asks otherwise. Be brief: show the
+commit, justify the type in a line, and state what you did not run.
 
 ````markdown
-## Suggested commit
+Listo. Con base en el diff actual, este seria el commit:
 
 ```text
 <type>: <title>
 
 - <actual change>
 - <actual change>
-- <test/docs/validation if present>
+- <test/docs/validation if actually run>
 ```
 
-## Why this type
-
-<short explanation>
-
-## Files considered
-
-- <file 1>
-- <file 2>
-````
-
-If tests were not run, say it clearly and do not claim validation happened:
-
-```text
-No puedo confirmar tests ejecutados porque no hay evidencia en la terminal ni en el diff.
-```
-
----
-
-## How to create a local checkpoint commit when authorized
-
-Only when the project Git policy or the user explicitly authorizes local commits.
-
-1. Run the inspection block ("Inspect the repository state").
-2. Confirm the change set is coherent and free of secrets and unrelated files.
-3. Confirm relevant validation ran, or clearly state what could not be validated.
-4. Stage only the files that belong to the completed step:
-
-```bash
-git add <relevant-files>
-```
-
-5. Create the local commit:
-
-```bash
-git commit -m "<type>: <imperative technical title>" -m "- <actual change>" -m "- <actual change>"
-```
-
-6. Report the commit title and validation result.
-7. Do not run `git push`.
-
----
-
-## Commit type decision guide
-
-- `feat`: a new screen, endpoint, flow, module capability, CLI command, or
-  user-visible behavior is added.
-- `fix`: a bug, security hole, invalid state, unsafe path, exposed data, broken
-  UI, failed validation, or incorrect behavior is corrected.
-- `refactor`: behavior is preserved but structure changes (logic moved into
-  modules, services, hooks, controllers, providers, widgets, helpers; DI or
-  explicit types introduced without new external behavior).
-- `chore`: runtime, scripts, secrets handling, package updates, local setup,
-  tooling, environment config, logs, guards, or operational configuration.
-- `test`: the main change is test coverage.
-- `ci`: the main change is a workflow or pipeline.
-- `docs`: the main change is documentation only.
-
----
-
-## Description checklist
-
-Before finalizing the body, verify each bullet answers at least one of: what was
-added, moved, extracted, protected, enforced, preserved, validated, or
-documented. Remove any bullet not backed by the actual diff.
-
----
-
-## Commit grouping checklist
-
-Before proposing one commit, verify the change set is coherent:
-
-- The files changed support the same goal.
-- The title accurately covers the whole diff.
-- The body does not hide unrelated changes.
-- Tests or docs are included only when they directly support the same change.
-- If unrelated changes exist, suggest splitting them into separate proposals.
-
----
-
-## Language
-
-- Commit titles and bodies: English by default, unless the user asks otherwise.
-- Responses to the user: follow the user's language (default Spanish for this
-  user). The templates below are in Spanish for that reason.
-
----
-
-## Final response style for the agent
-
-Be brief and useful:
-
-````markdown
-Listo. Con base en el diff actual, este seria el commit:
-
-```text
-<commit title>
-
-- <bullet>
-- <bullet>
-```
-
+Tipo `<type>` porque <razon en una linea>.
 No ejecute `git push` ni deploy.
 ````
 
-If the diff contains unrelated changes:
+When the diff contains unrelated changes, propose the split instead of one
+message:
 
 ```markdown
-Veo cambios que seria mejor separar en mas de un commit:
+Veo cambios que conviene separar en mas de un commit:
 
 1. `<type>: <title>` — <scope>
 2. `<type>: <title>` — <scope>
@@ -359,11 +190,5 @@ Veo cambios que seria mejor separar en mas de un commit:
 No ejecute `git push` ni deploy.
 ```
 
----
-
-## Style summary
-
-A project-agnostic commit message style favoring technical clarity, coherent
-change grouping, explicit validation only when available, security hardening
-when relevant, and documentation updates when behavior, setup, architecture, or
-operational workflows change.
+If validation was not run, say so plainly rather than implying it:
+`No puedo confirmar tests porque no hay evidencia en la terminal ni en el diff.`
