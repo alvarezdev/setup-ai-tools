@@ -1,0 +1,11 @@
+# Repos de terceros: se clonan con install.sh desde third-party-repos.txt,
+# no se versionan aqui. Solo se referencian por URL + commit en el manifiesto.
+/superpowers/
+/prompt-master/
+/abogado-del-diablo/
+/context7/
+/claude-token-efficient/
+/the-architect/
+
+# Ruido tipico del sistema
+.DS_Store

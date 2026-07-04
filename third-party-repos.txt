@@ -1,0 +1,13 @@
+# Manifiesto de repos de terceros referenciados por este proyecto.
+# install.sh lee este archivo y clona cada repo en la maquina nueva.
+# Formato:  nombre|url|branch|commit|modo
+#   modo = pinned  -> git clone completo + checkout al commit (reproducible)
+#   modo = shallow -> git clone --depth 1 --branch <branch> (tip actual, sin historial)
+#   commit = '-' cuando el modo es shallow (no se fija)
+# Lineas que empiezan con # se ignoran.
+superpowers|https://github.com/obra/superpowers.git|main|6fd4507659784c351abbd2bc264c7162cfd386dc|pinned
+prompt-master|https://github.com/nidhinjs/prompt-master.git|main|d15eabbe5d2122eedc060bae8a771381e9873d1b|pinned
+abogado-del-diablo|https://github.com/Hainrixz/abogado-del-diablo.git|main|7ba9a5fbca612531e7871ac41a71b410a03af76f|pinned
+the-architect|https://github.com/Hainrixz/the-architect.git|main|a5eeec9c4872975dceb48b5ecfe7b39280470f61|pinned
+context7|https://github.com/upstash/context7.git|master|-|shallow
+claude-token-efficient|https://github.com/drona23/claude-token-efficient.git|main|-|shallow
