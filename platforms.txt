@@ -1,0 +1,6 @@
+# Plataforma|comando_cli|argumento_version|archivo_instrucciones|detalle
+# Para registrar otra plataforma, agrega una linea aqui y sus herramientas en
+# platform-compatibility.txt. Usa '-' si el CLI no requiere argumento de version.
+# Los archivos de instrucciones se generan localmente desde PROJECT_INSTRUCTIONS.md.
+claude|claude|--version|CLAUDE.md|Claude Code
+codex|codex|--version|AGENTS.md|OpenAI Codex

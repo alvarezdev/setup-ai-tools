@@ -1,0 +1,18 @@
+# Herramienta|plataforma|soporte|required_path|detalle
+# soporte: native, compatible, adapter_required, incompatible, unknown
+superpowers|claude|native|superpowers/skills/using-superpowers/SKILL.md|Plugin y hooks propios de Claude Code
+superpowers|codex|native|superpowers/skills/using-superpowers/SKILL.md|Upstream incluye soporte y empaquetado para Codex
+prompt-master|claude|native|prompt-master/SKILL.md|Skill publicada para Claude
+prompt-master|codex|adapter_required|prompt-master/SKILL.md|Revisar invocaciones y referencias exclusivas de Claude
+abogado-del-diablo|claude|native|abogado-del-diablo/skills/abogado-del-diablo/SKILL.md|Skill publicada para Claude
+abogado-del-diablo|codex|adapter_required|abogado-del-diablo/skills/abogado-del-diablo/SKILL.md|Adaptar nombres de tools y flujos de subagentes
+commit-style|claude|compatible|skills/commit-style/SKILL.md|Formato SKILL.md compatible
+commit-style|codex|compatible|skills/commit-style/SKILL.md|Formato Agent Skills compatible
+context7|claude|native|context7/packages/mcp/package.json|MCP compatible con Claude Code
+context7|codex|native|context7/packages/mcp/package.json|MCP compatible con Codex
+the-architect|claude|native|the-architect/CLAUDE.md|Proyecto basado en CLAUDE.md
+the-architect|codex|adapter_required|the-architect/CLAUDE.md|Requiere AGENTS.md y adaptar skills externas
+claude-mem|claude|native|-|Plugin con hooks de Claude Code
+claude-mem|codex|native|-|Hooks nativos instalados automaticamente para Codex
+claude-token-efficient|claude|compatible|claude-token-efficient/CLAUDE.md|Reglas para CLAUDE.md global
+claude-token-efficient|codex|adapter_required|claude-token-efficient/CLAUDE.md|Requiere revisar y trasladar reglas a AGENTS.md

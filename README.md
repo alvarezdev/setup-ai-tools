@@ -1,37 +1,69 @@
 # setup-skills
 
-Configuracion portable de Claude Code: skills, MCP servers y plugins, con trazabilidad para moverla entre maquinas o compartirla.
+Configuracion portable de herramientas de IA para terminal, con trazabilidad para moverla entre maquinas o compartirla. La fuente del proyecto es independiente de Claude Code y Codex.
+
+## Empieza aqui
+
+Si ya estas usando Claude Code, Codex u otro agente, solo dile exactamente esto:
+
+> Clona `https://github.com/alvarezdev/setup-skills.git` y ejecuta su instalador.
+
+Eso es todo. No necesitas conocer comandos, elegir plataformas ni configurar archivos manualmente. El agente clonara el repositorio y ejecutara:
+
+```bash
+git clone https://github.com/alvarezdev/setup-skills.git && cd setup-skills && ./install.sh
+```
+
+El instalador detecta los agentes disponibles, configura lo compatible y arranca los servicios automaticamente.
 
 Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copian aqui: se referencian por URL y commit en `third-party-repos.txt` y los clona `install.sh`.
 
 ## Que contiene este repo
 
 - `skills/commit-style/` - skill propio (Conventional Commits desde el diff real)
-- `CLAUDE.md` - documentacion e inventario de todo lo instalado, por categoria
+- `PROJECT_INSTRUCTIONS.md` - fuente generica de instrucciones e inventario
 - `third-party-repos.txt` - manifiesto de repos de terceros (URL + commit)
+- `tool-versions.env` - versiones fijadas de paquetes instalados con otros gestores
+- `platforms.txt` - registro extensible de plataformas, CLI y archivo de instrucciones
+- `platform-compatibility.txt` - soporte y adaptaciones requeridas por plataforma
 - `install.sh` - bootstrap idempotente para una maquina nueva
+- `update.sh` - consulta y aplica actualizaciones de terceros de forma explicita
+- `verify-compatibility.sh` - valida las herramientas de cualquier plataforma registrada
+- `tests/` - pruebas de regresion y auditoria offline del instalador
 - `.gitignore` - ignora los directorios de terceros que clona `install.sh`
 
 ## Uso en una maquina nueva
 
+La instalacion normal no necesita opciones. Los siguientes comandos quedan solo para mantenimiento o pruebas:
+
 ```bash
-git clone <url-de-este-repo> setup-skills
-cd setup-skills
-./install.sh
+./install.sh --platform claude
+./install.sh --platform codex
+./install.sh --platform claude --platform codex
+```
+
+Para generar solamente los archivos de instrucciones, sin clonar ni instalar herramientas:
+
+```bash
+./install.sh --platform claude --platform codex --instructions-only
 ```
 
 `install.sh` hace, en orden:
-1. Clona los repos de terceros del manifiesto (pinned a un commit, o shallow para los de solo referencia).
-2. Crea los symlinks de skills en `~/.claude/skills/`.
-3. Actualiza `CLAUDE_PLUGIN_ROOT` y el hook de Superpowers en `~/.claude/settings.json`.
-4. Instala claude-mem (`npx claude-mem install`).
-5. Registra Context7 como MCP (`claude mcp add -s user`).
+1. Genera desde `PROJECT_INSTRUCTIONS.md` el archivo local declarado por cada plataforma: `CLAUDE.md`, `AGENTS.md` o ambos.
+2. Verifica las herramientas declaradas para todas las plataformas seleccionadas.
+3. Crea los repos ausentes y reconcilia los existentes contra su URL y version declaradas.
+4. Instala en Claude y Codex los skills que tienen soporte verificado, sin sobrescribir instalaciones ajenas.
+5. Instala claude-mem para cada plataforma, arranca su worker y registra Context7.
 
-Pasos manuales que el script recuerda al terminar: arrancar el worker de claude-mem (`npx claude-mem start`), el API key de Context7, y copiar las reglas globales a `~/.claude/CLAUDE.md`.
+Las herramientas de Codex que todavia necesitan adaptación (`prompt-master`, `abogado-del-diablo`, `the-architect` y `claude-token-efficient`) se omiten de forma explícita; el resto queda funcionando automáticamente.
+
+Los archivos generados llevan una marca de administracion. Si encuentra un `CLAUDE.md` o `AGENTS.md` ajeno, cambios Git rastreados, un `origin` diferente, una carpeta real o un symlink que apunta a otra fuente, se detiene sin reemplazar ese elemento.
+
+Context7 funciona de inmediato en el tier anonimo; agregar una API key es opcional.
 
 ## Terceros
 
-Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, context7, claude-token-efficient, the-architect) son repos independientes con licencia MIT, propiedad de sus autores. Aqui solo se referencian por URL; su codigo no forma parte de este repo. Ver `third-party-repos.txt` y la seccion correspondiente en `CLAUDE.md`.
+Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, context7, claude-token-efficient, the-architect) son repos independientes con licencia MIT, propiedad de sus autores. Aqui solo se referencian por URL; su codigo no forma parte de este repo. Ver `third-party-repos.txt` y la seccion correspondiente en `PROJECT_INSTRUCTIONS.md`.
 
 ## Versiones al clonar en una maquina nueva
 
@@ -39,3 +71,31 @@ Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, con
 - `shallow` (context7, claude-token-efficient): traen el ultimo estado de la rama al momento de correr `install.sh`, NO una version fija. Es intencional porque son solo referencia (el MCP de context7 corre remoto y las reglas de token-efficient ya viven en `~/.claude/CLAUDE.md`). Si el autor upstream las cambia, recibiras la version nueva.
 
 Para fijar uno de los `shallow`: en `third-party-repos.txt` cambia su modo a `pinned` y pon un commit; borra su carpeta y vuelve a correr `install.sh`.
+
+## Actualizar herramientas
+
+Las instalaciones normales permanecen reproducibles. Las actualizaciones se hacen de forma explicita:
+
+```bash
+./update.sh check
+./update.sh apply
+```
+
+`check` compara los commits fijados y la version de claude-mem con upstream sin modificar archivos. `apply` actualiza los clones locales, valida que conserven sus archivos esenciales y guarda los nuevos commits `pinned` en `third-party-repos.txt` y la nueva version de claude-mem en `tool-versions.env`.
+
+Los repositorios `shallow` siguen intencionalmente el ultimo commit de su rama porque solo se conservan como referencia. Si un repositorio tiene cambios rastreados, `apply` se detiene antes de actualizar; los archivos no rastreados se conservan y Git evita sobrescribirlos si entran en conflicto.
+
+## Verificar compatibilidad y regresiones
+
+```bash
+./verify-compatibility.sh --platform claude --phase post
+./verify-compatibility.sh --platform codex --phase post
+./tests/test_install.sh
+./tests/test_compatibility.sh
+./tests/test_instructions.sh
+./tests/audit_project.sh
+```
+
+El verificador devuelve `0` cuando todo es compatible, `2` cuando faltan adaptadores y `1` ante incompatibilidades o archivos requeridos ausentes. El instalador configura automáticamente lo compatible y señala lo que todavía necesita adaptación.
+
+La validacion y la eleccion del nombre del archivo no contienen una lista fija de plataformas. Para agregar otra, registra su nombre, CLI y archivo de instrucciones en `platforms.txt`, y agrega las filas correspondientes en `platform-compatibility.txt`; los scripts la descubriran sin cambios de codigo.

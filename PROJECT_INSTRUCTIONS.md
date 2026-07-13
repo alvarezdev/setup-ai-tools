@@ -1,14 +1,14 @@
-# CLAUDE.md
+# Instrucciones del proyecto
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Este archivo proporciona instrucciones persistentes a cualquier agente de desarrollo que trabaje en este repositorio. `install.sh` lo publica con el nombre esperado por cada plataforma seleccionada.
 
 ## Regla de documentacion
 
 Cada vez que se instale una herramienta, plugin, perfil o recurso en este proyecto, documenta inmediatamente en este archivo bajo la categoria correspondiente:
-- **Skills** - Habilidades que Claude invoca con el tool `Skill` para guiar su comportamiento en tareas especificas.
-- **MCP Servers** - Servidores externos que Claude Code conecta via protocolo MCP para acceder a herramientas y datos en tiempo real.
-- **Instrucciones de Comportamiento** - Reglas en archivos CLAUDE.md que modifican como Claude responde por defecto (tono, formato, eficiencia, etc.).
-- **Plugins** - Paquetes instalados via marketplace de Claude Code que combinan hooks, skills y servicios de fondo en una sola unidad.
+- **Skills** - Habilidades que los agentes invocan para guiar su comportamiento en tareas especificas.
+- **MCP Servers** - Servidores externos que una plataforma conecta via protocolo MCP para acceder a herramientas y datos en tiempo real.
+- **Instrucciones de Comportamiento** - Reglas persistentes que modifican como responde cada agente por defecto.
+- **Plugins** - Paquetes instalables que combinan hooks, skills y servicios de fondo en una sola unidad.
 
 Por cada item documentar:
 - Nombre y repositorio fuente.
@@ -25,17 +25,22 @@ No omitas este paso aunque la instalacion haya sido simple.
 
 Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-skills` en una maquina nueva, correr un script, y quedar configurado.
 
-Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `CLAUDE.md`, `install.sh`, `README.md`, `third-party-repos.txt`, `.gitignore`). Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
+Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
 Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 - `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect.
 - `shallow` - `git clone --depth 1` del tip de la rama, sin fijar commit. Usado por context7 y claude-token-efficient (solo referencia; su version exacta no importa y evita traer los 45MB de historial de context7).
-- Para actualizar o fijar la version de un tercero, editar su linea en el manifiesto.
+- `tool-versions.env` fija paquetes que no se instalan desde repos Git, actualmente claude-mem.
+- `./update.sh check` consulta actualizaciones sin modificar archivos; `./update.sh apply` actualiza, valida y guarda los nuevos commits y versiones.
 
 Como funciona:
+- `PROJECT_INSTRUCTIONS.md` es la unica fuente versionada de instrucciones del proyecto. `platforms.txt` declara el nombre local que usa cada plataforma y `install.sh` genera los archivos administrados correspondientes. Con Claude y Codex seleccionados conviven `CLAUDE.md` y `AGENTS.md` con el mismo contenido.
 - Los skills en `~/.claude/skills/` **son symlinks**, no copias. El contenido real vive dentro de este repo (en `skills/` para skills sin repo propio como `commit-style`, o dentro del repo clonado de cada herramienta como `superpowers/skills/*`, `prompt-master/`, `abogado-del-diablo/skills/*`).
-- `install.sh` clona los terceros del manifiesto, recrea esos symlinks, actualiza `CLAUDE_PLUGIN_ROOT` y el hook de Superpowers en `~/.claude/settings.json` (usando la ruta real donde se clono el repo, no una ruta fija), corre `npx claude-mem install`, y registra Context7 con `claude mcp add -s user`.
-- El script es idempotente: se puede correr varias veces sin duplicar ni romper nada (los clones tienen guarda "si no existe").
+- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, configura claude-mem con hooks nativos y registra Context7. Los destinos ajenos nunca se reemplazan.
+- `update.sh` resuelve el ultimo commit de cada rama y la ultima version npm de claude-mem. En modo `apply`, actualiza los clones, valida sus archivos esenciales y persiste las nuevas versiones para que instalaciones posteriores sigan siendo reproducibles.
+- `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
+- El instalador es convergente para repos `pinned`: valida `origin`, estado Git y commit. No reemplaza carpetas reales ni symlinks que apunten fuera de este proyecto.
+- `settings.json` se valida estructuralmente y se reemplaza de forma atomica, preservando grupos `SessionStart` existentes y evitando hooks duplicados.
 
 Uso en maquina nueva:
 ```bash
@@ -44,21 +49,23 @@ cd setup-skills
 ./install.sh
 ```
 
+Sin opciones, el script selecciona todos los CLI registrados que encuentre en `PATH`. Usa `--platform` o `--instructions-only` solamente para mantenimiento y pruebas.
+
 Limitaciones conocidas (no automatizadas todavia):
-- **`~/.claude/CLAUDE.md` (reglas globales)** no se genera con este script. Su contenido (reglas de espanol, claude-token-efficient, estilo de escritura) debe copiarse manualmente; ver seccion "Instrucciones de Comportamiento" mas abajo.
-- **claude-mem**: sus archivos viven en `~/.claude/plugins/marketplaces/thedotmack/` (con `node_modules` propios), no dentro de este repo. `install.sh` los reinstala en cada maquina via `npx claude-mem install`, no los copia.
-- **Context7**: es una entrada en `~/.claude.json` (scope user), no un archivo. `install.sh` la registra con `claude mcp add`.
+- **Reglas globales personales**: no se sobrescriben. No son necesarias para usar este proyecto; pueden configurarse opcionalmente en el archivo global de cada plataforma.
+- **claude-mem**: sus archivos viven en `~/.claude/plugins/marketplaces/thedotmack/` (con `node_modules` propios), no dentro de este repo. `install.sh` instala la version declarada en `tool-versions.env`; `update.sh apply` es el unico flujo que la avanza automaticamente.
+- **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex.
 - **`the-architect`**: repo autocontenido que se usa con `cd` + `claude`. No requiere symlink, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
 
 ---
 
 ## Skills
 
-Skills instalados en `~/.claude/skills/`. Se invocan con el tool `Skill` de Claude Code.
+Skills instalados mediante symlinks en `~/.claude/skills/` y, cuando son compatibles, en `$CODEX_HOME/skills/`.
 
 ### Superpowers
 - Repositorio: https://github.com/obra/superpowers
-- Instalado en: `~/.claude/skills/<nombre>` (symlinks) -> `setup-skills/superpowers/skills/<nombre>` (fuente real) + `~/.claude/settings.json` (hook SessionStart, gestionado por `install.sh`)
+- Instalado en: `~/.claude/skills/<nombre>` y `$CODEX_HOME/skills/<nombre>` (symlinks) -> `setup-skills/superpowers/skills/<nombre>`; Claude agrega su hook SessionStart mediante `install.sh`
 - Alcance: global
 
 Metodologia completa de desarrollo de software para agentes de codificacion. Al iniciar sesion, inyecta automaticamente instrucciones via hook y pone a disposicion un conjunto de skills que el agente debe invocar segun el contexto.
@@ -81,7 +88,7 @@ Skills disponibles:
 Consideraciones:
 - Los skills se invocan con el tool `Skill`, no leyendo los archivos directamente.
 - El hook `SessionStart` requiere que `CLAUDE_PLUGIN_ROOT` apunte al repositorio clonado.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/AI/Claude/setup-skills/superpowers`
+- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/superpowers`
 
 ---
 
@@ -114,7 +121,7 @@ Formato de salida: VEREDICTO brutal, grietas ordenadas por severidad, causa de m
 Consideraciones:
 - Si hay web search disponible, busca casos reales de fracasos similares antes de opinar.
 - Para demolicion profunda lanza subagentes con `Task`, uno por angulo.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/AI/Claude/setup-skills/abogado-del-diablo`
+- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/abogado-del-diablo`
 
 ---
 
@@ -141,13 +148,13 @@ Consideraciones:
 - Pregunta max 3 preguntas de clarificacion si falta informacion critica.
 - Para herramientas agentivas agrega automaticamente condiciones de parada y limites de scope.
 - No agrega CoT a modelos de razonamiento nativo (o3, o4-mini, DeepSeek-R1, Qwen3 thinking).
-- Repositorio clonado en: `/Users/hectoralvarez/Development/AI/Claude/setup-skills/prompt-master`
+- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/prompt-master`
 
 ---
 
 ### commit-style
 - Origen: creado por el usuario. Fuente base en `appguarderia/docs/ai/commit_style_skill.md`
-- Instalado en: `~/.claude/skills/commit-style/` (symlink) -> `setup-skills/skills/commit-style/` (fuente real, `SKILL.md` + `references/examples.md`)
+- Instalado en: `~/.claude/skills/commit-style/` y `$CODEX_HOME/skills/commit-style/` (symlinks) -> `setup-skills/skills/commit-style/`
 - Alcance: global
 
 Skill que genera propuestas de mensaje de commit en estilo Conventional Commits a partir del diff real del repositorio. Titulo corto en ingles con verbo imperativo, cuerpo con bullets concretos, y notas de validacion solo cuando hay evidencia de que se ejecuto.
@@ -176,12 +183,12 @@ Mejoras aplicadas sobre la version original:
 
 ## MCP Servers
 
-Servidores registrados con el comando `claude mcp add`. Ver alcance de cada uno abajo.
+Servidores registrados con los comandos MCP nativos de cada plataforma. Ver alcance de cada uno abajo.
 
 ### Context7
 - Repositorio: https://github.com/upstash/context7
-- Instalado con: `claude mcp add --transport http context7 https://mcp.context7.com/mcp -s user`
-- Alcance: `user` (global, disponible en todos los proyectos sin aprobacion por proyecto)
+- Instalado con: `claude mcp add --transport http ... -s user` y `codex mcp add context7 --url ...`
+- Alcance: `user` (global en las plataformas detectadas)
 - URL del servidor: `https://mcp.context7.com/mcp`
 
 Servidor MCP que provee documentacion actualizada de librerias directamente en el contexto del agente. Resuelve el problema de que los LLMs usan documentacion desactualizada de entrenamiento, generando APIs hallucindas o ejemplos de versiones viejas.
@@ -201,12 +208,14 @@ Verificar en cualquier sesion:
 ```bash
 claude mcp list
 claude mcp get context7
+codex mcp list
+codex mcp get context7
 ```
 
 Consideraciones:
 - Sin API key funciona en modo anonimo con rate limits reducidos.
-- RECORDATORIO: Crear cuenta en context7.com/dashboard, obtener API key. El formato exacto de header para pasarlo con `claude mcp add --header` no esta confirmado; verificar en la documentacion de Context7 antes de aplicarlo.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/AI/Claude/setup-skills/context7` (solo referencia, el servidor corre remotamente).
+- Una cuenta y API key amplian el tier anonimo, pero son opcionales para comenzar.
+- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/context7` (solo referencia, el servidor corre remotamente).
 
 ---
 
@@ -242,20 +251,20 @@ Versiones avanzadas:
 Consideraciones:
 - El archivo CLAUDE.md agrega tokens de entrada en cada mensaje. El beneficio neto solo aplica cuando el volumen de output es alto.
 - Para cambiar de perfil, reemplazar el contenido de `~/.claude/CLAUDE.md` con el perfil deseado.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/AI/Claude/setup-skills/claude-token-efficient`
+- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/claude-token-efficient`
 
 ---
 
 ### the-architect
 - Repositorio: https://github.com/Hainrixz/the-architect
-- Instalado en: `/Users/hectoralvarez/Development/AI/Claude/setup-skills/the-architect/`
+- Instalado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/the-architect/`
 - Alcance: proyecto (requiere navegar al directorio)
 
 Meta-agente de diseno de software. Al abrir Claude Code dentro de su directorio, el CLAUDE.md lo transforma en "The Architect": un agente que convierte una idea en un blueprint completo de 16 secciones listo para ser ejecutado por otra instancia de Claude Code.
 
 Como activarlo:
 ```bash
-cd /Users/hectoralvarez/Development/AI/Claude/setup-skills/the-architect
+cd /Users/hectoralvarez/Development/ai/Claude/setup-skills/the-architect
 claude
 ```
 
@@ -279,16 +288,16 @@ Consideraciones:
 
 ## Plugins
 
-Paquetes instalados via marketplace de Claude Code (`~/.claude/plugins/`). Combinan hooks automaticos, skills y servicios de fondo en una sola unidad gestionada.
+Paquetes con integraciones nativas por plataforma. Combinan hooks automaticos, skills y servicios de fondo.
 
 ### claude-mem
 - Repositorio: https://github.com/thedotmack/claude-mem
-- Version instalada: 13.6.0
-- Instalado en: `~/.claude/plugins/marketplaces/thedotmack/`
+- Version administrada: ver `CLAUDE_MEM_VERSION` en `tool-versions.env`
+- Instalado en: marketplace local de Claude y marketplace/plugin de Codex
 - Alcance: global
-- Instalado via: `npx claude-mem install`
+- Instalado via: `npx claude-mem@<version> install --ide claude-code|codex-cli`
 
-Sistema de memoria persistente para Claude Code. Captura automaticamente observaciones de cada sesion (lecturas de archivos, ediciones, comandos ejecutados), genera resumenes semanticos y los inyecta como contexto en sesiones futuras del mismo proyecto.
+Sistema de memoria persistente para Claude Code y Codex. Captura automaticamente observaciones, genera resumenes semanticos y los inyecta como contexto en sesiones futuras del mismo proyecto.
 
 Componentes activos:
 - **Worker service**: proceso local en `http://localhost:37701` con panel web para ver memoria en tiempo real
@@ -323,7 +332,7 @@ spawn knowledge-agent to find decisions about the database schema
 Privacidad: usa etiquetas `<private>` para excluir contenido del almacenamiento.
 
 Consideraciones:
-- El worker NO arranca automaticamente en la primera instalacion. Iniciarlo manualmente: `npx claude-mem start`
+- El instalador arranca el worker automaticamente y falla de forma visible si no puede dejarlo funcionando.
 - La memoria empieza a inyectarse a partir de la segunda sesion en un proyecto.
 - Panel web: `http://localhost:37701`
 - La memoria se acumula en `~/.claude-mem/` (local, no se sincroniza).

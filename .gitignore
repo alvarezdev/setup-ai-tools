@@ -7,5 +7,9 @@
 /claude-token-efficient/
 /the-architect/
 
+# Archivos de instrucciones generados localmente desde PROJECT_INSTRUCTIONS.md.
+/CLAUDE.md
+/AGENTS.md
+
 # Ruido tipico del sistema
 .DS_Store
