@@ -27,6 +27,7 @@ Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copi
 - `platforms.txt` - registro extensible de plataformas, CLI y archivo de instrucciones
 - `platform-compatibility.txt` - soporte y adaptaciones requeridas por plataforma
 - `install.sh` - bootstrap idempotente para una maquina nueva
+- `manage.sh` - administra herramientas y manifiestos; uso exclusivo del mantenedor
 - `update.sh` - consulta y aplica actualizaciones de terceros de forma explicita
 - `verify-compatibility.sh` - valida las herramientas de cualquier plataforma registrada
 - `tests/` - pruebas de regresion y auditoria offline del instalador
@@ -85,6 +86,28 @@ Las instalaciones normales permanecen reproducibles. Las actualizaciones se hace
 
 Los repositorios `shallow` siguen intencionalmente el ultimo commit de su rama porque solo se conservan como referencia. Si un repositorio tiene cambios rastreados, `apply` se detiene antes de actualizar; los archivos no rastreados se conservan y Git evita sobrescribirlos si entran en conflicto.
 
+## Administrar herramientas (solo mantenedor)
+
+Los usuarios finales no necesitan `manage.sh`: solo ejecutan `install.sh`. `manage.sh` modifica localmente la fuente de verdad del repositorio, pero nunca instala, borra clones, crea commits ni hace push. Los permisos del repositorio remoto determinan quien puede publicar esos cambios.
+
+Operaciones principales:
+
+```bash
+./manage.sh list
+./manage.sh tool add <nombre> <url> <rama> pinned <commit>
+./manage.sh tool update <nombre> latest
+./manage.sh compatibility set <herramienta> <plataforma> <soporte> <ruta|-> "<detalle>"
+./manage.sh tool remove <nombre>
+./manage.sh validate
+./manage.sh audit
+```
+
+Para un skill o MCP nuevo, registra primero su repositorio o version y luego una fila de compatibilidad por plataforma. Si la herramienta necesita comandos, hooks o rutas de instalacion diferentes a las existentes, tambien debe agregarse su provisionamiento a `install.sh` y una prueba de regresion. El gestor no supone automaticamente como integrar codigo de terceros desconocido.
+
+`tool remove` quita el repositorio y su compatibilidad de los manifiestos, pero conserva el directorio local y su regla en `.gitignore` para impedir que codigo tercero se agregue accidentalmente al repo. Usa `./manage.sh --help` para ver plataformas, versiones y todas las variantes disponibles.
+
+`manage.sh tool update` cambia una herramienta puntual; `update.sh check|apply` sigue siendo el flujo para revisar o avanzar todas las dependencias desde upstream en una sola operacion. Despues de cualquier cambio de mantenimiento, actualiza `PROJECT_INSTRUCTIONS.md` y `GUIDE.md`, ejecuta `./manage.sh audit`, revisa el diff y solo entonces crea el commit.
+
 ## Verificar compatibilidad y regresiones
 
 ```bash
@@ -93,6 +116,7 @@ Los repositorios `shallow` siguen intencionalmente el ultimo commit de su rama p
 ./tests/test_install.sh
 ./tests/test_compatibility.sh
 ./tests/test_instructions.sh
+./tests/test_manage.sh
 ./tests/audit_project.sh
 ```
 

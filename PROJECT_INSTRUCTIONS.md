@@ -25,13 +25,14 @@ No omitas este paso aunque la instalacion haya sido simple.
 
 Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-skills` en una maquina nueva, correr un script, y quedar configurado.
 
-Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
+Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
 Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 - `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect.
 - `shallow` - `git clone --depth 1` del tip de la rama, sin fijar commit. Usado por context7 y claude-token-efficient (solo referencia; su version exacta no importa y evita traer los 45MB de historial de context7).
 - `tool-versions.env` fija paquetes que no se instalan desde repos Git, actualmente claude-mem.
 - `./update.sh check` consulta actualizaciones sin modificar archivos; `./update.sh apply` actualiza, valida y guarda los nuevos commits y versiones.
+- `./manage.sh` es exclusivo del mantenedor: agrega, actualiza o elimina declaraciones de herramientas, compatibilidad, plataformas y versiones. Nunca instala, borra clones, crea commits ni hace push.
 
 Como funciona:
 - `PROJECT_INSTRUCTIONS.md` es la unica fuente versionada de instrucciones del proyecto. `platforms.txt` declara el nombre local que usa cada plataforma y `install.sh` genera los archivos administrados correspondientes. Con Claude y Codex seleccionados conviven `CLAUDE.md` y `AGENTS.md` con el mismo contenido.
@@ -39,6 +40,7 @@ Como funciona:
 - `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, configura claude-mem con hooks nativos y registra Context7. Los destinos ajenos nunca se reemplazan.
 - `update.sh` resuelve el ultimo commit de cada rama y la ultima version npm de claude-mem. En modo `apply`, actualiza los clones, valida sus archivos esenciales y persiste las nuevas versiones para que instalaciones posteriores sigan siendo reproducibles.
 - `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
+- `manage.sh validate` comprueba la estructura y consistencia cruzada de todos los manifiestos; `manage.sh audit` agrega la suite completa de regresion. Una herramienta nueva que requiera hooks o comandos propios tambien debe incorporar su provisionamiento en `install.sh` y sus pruebas.
 - El instalador es convergente para repos `pinned`: valida `origin`, estado Git y commit. No reemplaza carpetas reales ni symlinks que apunten fuera de este proyecto.
 - `settings.json` se valida estructuralmente y se reemplaza de forma atomica, preservando grupos `SessionStart` existentes y evitando hooks duplicados.
 

@@ -16,17 +16,19 @@ pass() {
 
 bash -n install.sh
 bash -n update.sh
+bash -n manage.sh
 bash -n verify-compatibility.sh
 bash -n tests/test_install.sh
 bash -n tests/test_compatibility.sh
 bash -n tests/test_instructions.sh
+bash -n tests/test_manage.sh
 pass "sintaxis Bash"
 
 git diff --check
 git diff --cached --check
 pass "diff sin errores de espacios"
 
-if rg -n 'Development/AI/' README.md GUIDE.md PROJECT_INSTRUCTIONS.md install.sh update.sh verify-compatibility.sh tests/test_install.sh tests/test_instructions.sh >/dev/null; then
+if rg -n 'Development/AI/' README.md GUIDE.md PROJECT_INSTRUCTIONS.md install.sh manage.sh update.sh verify-compatibility.sh tests/test_install.sh tests/test_instructions.sh tests/test_manage.sh >/dev/null; then
   fail "quedan rutas con Development/AI/"
 fi
 pass "rutas Development/ai consistentes"
@@ -120,6 +122,12 @@ pass "verificador extensible sin plataformas codificadas"
 
 ./tests/test_instructions.sh
 pass "instrucciones locales generadas por plataforma"
+
+./tests/test_manage.sh
+pass "operaciones seguras de mantenimiento"
+
+./manage.sh validate
+pass "manifiestos de mantenimiento consistentes"
 
 ./verify-compatibility.sh --platform claude --phase post
 pass "compatibilidad Claude"
