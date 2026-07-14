@@ -606,6 +606,133 @@ ensure_skill_link() {
   echo "OK  $label -> $target"
 }
 
+install_codex_token_efficient() {
+  local source="$1"
+  local agents="$CODEX_HOME/AGENTS.md"
+  local override="$CODEX_HOME/AGENTS.override.md"
+  local status
+  local marker_begin='# >>> setup-ai-tools: claude-token-efficient >>>'
+  local marker_end='# <<< setup-ai-tools: claude-token-efficient <<<'
+
+  if [ ! -f "$source" ]; then
+    echo "ERROR: falta la fuente de claude-token-efficient: $source" >&2
+    return 1
+  fi
+
+  if [ -f "$override" ] && [ -s "$override" ]; then
+    add_install_conflict "codex/claude-token-efficient: AGENTS.override.md no vacio puede ocultar $agents"
+    echo "AVISO: $override no vacio puede impedir que Codex lea $agents" >&2
+  fi
+
+  if [ -L "$agents" ]; then
+    add_install_conflict "codex/claude-token-efficient: AGENTS.md es un symlink; se conserva"
+    echo "AVISO: $agents es un symlink; se conserva y se omite claude-token-efficient" >&2
+    return 0
+  fi
+  if [ -e "$agents" ] && [ ! -f "$agents" ]; then
+    add_install_conflict "codex/claude-token-efficient: AGENTS.md existe y no es un archivo regular; se conserva"
+    echo "AVISO: $agents existe y no es un archivo regular; se conserva y se omite claude-token-efficient" >&2
+    return 0
+  fi
+
+  if python3 - "$agents" "$source" "$marker_begin" "$marker_end" <<'PYEOF'
+import os
+import stat
+import sys
+import tempfile
+
+agents_path, source_path, begin, end = sys.argv[1:]
+
+with open(source_path, encoding="utf-8") as f:
+    source = f.read()
+
+if begin in source or end in source:
+    print(
+        "ERROR: la fuente de claude-token-efficient contiene marcadores administrados",
+        file=sys.stderr,
+    )
+    raise SystemExit(4)
+
+if os.path.exists(agents_path):
+    with open(agents_path, encoding="utf-8") as f:
+        current = f.read()
+else:
+    current = ""
+
+lines = current.splitlines(keepends=True)
+line_contents = [line.rstrip("\r\n") for line in lines]
+begin_indexes = [
+    index for index, line in enumerate(line_contents) if line == begin
+]
+end_indexes = [
+    index for index, line in enumerate(line_contents) if line == end
+]
+has_marker_variant = any(
+    line.startswith(begin) and line != begin for line in line_contents
+) or any(
+    line.startswith(end) and line != end for line in line_contents
+)
+
+if has_marker_variant:
+    print(
+        f"AVISO: {agents_path} contiene marcadores administrados corruptos; se conserva",
+        file=sys.stderr,
+    )
+    raise SystemExit(3)
+elif not begin_indexes and not end_indexes:
+    prefix = current
+    if prefix and not prefix.endswith(("\n", "\r")):
+        prefix += "\n"
+    updated = prefix + begin + "\n" + source
+    if not updated.endswith(("\n", "\r")):
+        updated += "\n"
+    updated += end + "\n"
+elif len(begin_indexes) == 1 and len(end_indexes) == 1 and begin_indexes[0] < end_indexes[0]:
+    source_block = source
+    if source_block and not source_block.endswith(("\n", "\r")):
+        source_block += "\n"
+    updated = "".join(lines[:begin_indexes[0]])
+    updated += begin + "\n" + source_block + end + "\n"
+    updated += "".join(lines[end_indexes[0] + 1:])
+else:
+    print(
+        f"AVISO: {agents_path} contiene marcadores administrados corruptos; se conserva",
+        file=sys.stderr,
+    )
+    raise SystemExit(3)
+
+directory = os.path.dirname(agents_path)
+os.makedirs(directory, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".agents.", suffix=".md", dir=directory)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(updated)
+        f.flush()
+        os.fsync(f.fileno())
+    if os.path.exists(agents_path):
+        os.chmod(temporary, stat.S_IMODE(os.stat(agents_path).st_mode))
+    os.replace(temporary, agents_path)
+except Exception:
+    try:
+        os.unlink(temporary)
+    except FileNotFoundError:
+        pass
+    raise
+PYEOF
+  then
+    echo "OK  claude-token-efficient actualizado en $agents"
+    return 0
+  else
+    status=$?
+  fi
+
+  if [ "$status" -eq 3 ]; then
+    add_install_conflict "codex/claude-token-efficient: marcadores administrados corruptos en AGENTS.md; se conserva"
+    return 0
+  fi
+  return "$status"
+}
+
 add_install_conflict() {
   local detail="$1"
   if printf '%s\n' "$INSTALL_CONFLICTS" | grep -Fx "$detail" >/dev/null 2>&1; then
@@ -950,6 +1077,8 @@ if platform_is_selected codex; then
   mkdir -p "$CODEX_SKILLS_DST"
   CODEX_SKILL_LINKS="
 commit-style|commit-style|$BASE/skills/commit-style
+prompt-master|prompt-master|$BASE/adapters/codex/prompt-master
+abogado-del-diablo|abogado-del-diablo|$BASE/adapters/codex/abogado-del-diablo
 superpowers|brainstorming|$SUPERPOWERS_CODEX_ROOT/skills/brainstorming
 superpowers|dispatching-parallel-agents|$SUPERPOWERS_CODEX_ROOT/skills/dispatching-parallel-agents
 superpowers|executing-plans|$SUPERPOWERS_CODEX_ROOT/skills/executing-plans
@@ -982,6 +1111,8 @@ context7|context7-mcp|$BASE/context7/plugins/codex/context7/skills/context7-mcp
   done <<EOF
 $CODEX_SKILL_LINKS
 EOF
+
+  install_codex_token_efficient "$BASE/claude-token-efficient/CLAUDE.md"
 fi
 
 # --- 4. claude-mem: integraciones seleccionadas + worker ----------------

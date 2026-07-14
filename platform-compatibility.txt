@@ -3,16 +3,16 @@
 superpowers|claude|native|superpowers/skills/using-superpowers/SKILL.md|Plugin y hooks propios de Claude Code
 superpowers|codex|native|superpowers/skills/using-superpowers/SKILL.md|Upstream incluye soporte y empaquetado para Codex
 prompt-master|claude|native|prompt-master/SKILL.md|Skill publicada para Claude
-prompt-master|codex|adapter_required|prompt-master/SKILL.md|Revisar invocaciones y referencias exclusivas de Claude
+prompt-master|codex|compatible|adapters/codex/prompt-master/SKILL.md|Adaptador propio para Codex que conserva la skill upstream como referencia
 abogado-del-diablo|claude|native|abogado-del-diablo/skills/abogado-del-diablo/SKILL.md|Skill publicada para Claude
-abogado-del-diablo|codex|adapter_required|abogado-del-diablo/skills/abogado-del-diablo/SKILL.md|Adaptar nombres de tools y flujos de subagentes
+abogado-del-diablo|codex|compatible|adapters/codex/abogado-del-diablo/SKILL.md|Adaptador propio para Codex con capacidades y subagentes traducidos
 commit-style|claude|compatible|skills/commit-style/SKILL.md|Formato SKILL.md compatible
 commit-style|codex|compatible|skills/commit-style/SKILL.md|Formato Agent Skills compatible
 context7|claude|native|context7/packages/mcp/package.json|MCP compatible con Claude Code
 context7|codex|native|context7/packages/mcp/package.json|MCP compatible con Codex
 the-architect|claude|native|the-architect/CLAUDE.md|Proyecto basado en CLAUDE.md
-the-architect|codex|adapter_required|the-architect/CLAUDE.md|Requiere AGENTS.md y adaptar skills externas
+the-architect|codex|compatible|adapters/codex/the-architect/AGENTS.md|Workspace Codex propio que reutiliza preguntas y plantillas upstream
 claude-mem|claude|native|-|Plugin con hooks de Claude Code
 claude-mem|codex|native|-|Hooks nativos instalados automaticamente para Codex
 claude-token-efficient|claude|compatible|claude-token-efficient/CLAUDE.md|Reglas para CLAUDE.md global
-claude-token-efficient|codex|adapter_required|claude-token-efficient/CLAUDE.md|Requiere revisar y trasladar reglas a AGENTS.md
+claude-token-efficient|codex|compatible|claude-token-efficient/CLAUDE.md|Reglas upstream insertadas en un bloque administrado de $CODEX_HOME/AGENTS.md

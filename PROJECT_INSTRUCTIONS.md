@@ -25,7 +25,7 @@ No omitas este paso aunque la instalacion haya sido simple.
 
 Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-ai-tools` en una maquina nueva, correr un script, y quedar configurado.
 
-Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
+Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `adapters/codex/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
 Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 - `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect.
@@ -36,8 +36,8 @@ Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 
 Como funciona:
 - `PROJECT_INSTRUCTIONS.md` es la unica fuente versionada de instrucciones del proyecto. `platforms.txt` declara el nombre local que usa cada plataforma y `install.sh` genera los archivos administrados correspondientes. Con Claude y Codex seleccionados conviven `CLAUDE.md` y `AGENTS.md` con el mismo contenido.
-- Los skills en `~/.claude/skills/` **son symlinks**, no copias. El contenido real vive dentro de este repo (en `skills/` para skills sin repo propio como `commit-style`, o dentro del repo clonado de cada herramienta como `superpowers/skills/*`, `prompt-master/`, `abogado-del-diablo/skills/*`).
-- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, configura claude-mem con hooks nativos y registra Context7. Los destinos ajenos nunca se reemplazan.
+- Los skills instalados en `~/.claude/skills/` y `$CODEX_HOME/skills/` **son symlinks**, no copias. El contenido real vive dentro de este repo o de un repo clonado. Los adaptadores propios de Codex viven en `adapters/codex/` y contienen symlinks relativos a su fuente upstream para no modificarla.
+- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, incluidos los adaptadores de `prompt-master` y `abogado-del-diablo`; configura claude-mem con hooks nativos, registra Context7 y actualiza el bloque administrado de `claude-token-efficient` en `$CODEX_HOME/AGENTS.md`. Los destinos ajenos nunca se reemplazan.
 - `update.sh` resuelve el ultimo commit de cada rama y la ultima version npm de claude-mem. En modo `apply`, actualiza los clones, valida sus archivos esenciales y persiste las nuevas versiones para que instalaciones posteriores sigan siendo reproducibles.
 - `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
 - `manage.sh validate` comprueba la estructura y consistencia cruzada de todos los manifiestos; `manage.sh audit` agrega la suite completa de regresion. Una herramienta nueva que requiera hooks o comandos propios tambien debe incorporar su provisionamiento en `install.sh` y sus pruebas.
@@ -58,8 +58,8 @@ Sin opciones, el script selecciona todos los CLI registrados que encuentre en `P
 Limitaciones conocidas (no automatizadas todavia):
 - **Reglas globales personales**: no se sobrescriben. No son necesarias para usar este proyecto; pueden configurarse opcionalmente en el archivo global de cada plataforma.
 - **claude-mem**: sus archivos viven en `~/.claude/plugins/marketplaces/thedotmack/` (con `node_modules` propios), no dentro de este repo. `install.sh` instala la version declarada en `tool-versions.env`; `update.sh apply` es el unico flujo que la avanza automaticamente.
-- **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex.
-- **`the-architect`**: repo autocontenido que se usa con `cd` + `claude`. No requiere symlink, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
+- **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex. El aviso `could not create PATH aliases` al ejecutar `codex` dentro de un sandbox restringido no corresponde al MCP: se verifica desde una Terminal normal, sin filtrar `stderr` ni mover `CODEX_HOME` a `/tmp`.
+- **`the-architect`**: repo autocontenido para Claude en `the-architect/` y workspace adaptado para Codex en `adapters/codex/the-architect/`. No requiere symlink de skill, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
 
 ---
 
@@ -98,7 +98,8 @@ Consideraciones:
 
 ### abogado-del-diablo
 - Repositorio: https://github.com/Hainrixz/abogado-del-diablo
-- Instalado en: `~/.claude/skills/abogado-del-diablo` (symlink) -> `setup-ai-tools/abogado-del-diablo/skills/abogado-del-diablo` (fuente real)
+- Instalado en Claude: `~/.claude/skills/abogado-del-diablo` (symlink) -> `setup-ai-tools/abogado-del-diablo/skills/abogado-del-diablo` (fuente real)
+- Instalado en Codex: `$CODEX_HOME/skills/abogado-del-diablo` (symlink) -> `setup-ai-tools/adapters/codex/abogado-del-diablo`; su `upstream` relativo apunta a la fuente real
 - Alcance: global
 - Version: 1.0.0
 
@@ -125,13 +126,15 @@ Formato de salida: VEREDICTO brutal, grietas ordenadas por severidad, causa de m
 Consideraciones:
 - Si hay web search disponible, busca casos reales de fracasos similares antes de opinar.
 - Para demolicion profunda lanza subagentes con `Task`, uno por angulo.
+- En Codex, el adaptador usa lectura local y `rg`, búsqueda web cuando esté disponible y subagentes solo cuando estén disponibles y autorizados; no presupone tools de Claude.
 - Repositorio clonado en: `setup-ai-tools/abogado-del-diablo`
 
 ---
 
 ### prompt-master
 - Repositorio: https://github.com/nidhinjs/prompt-master
-- Instalado en: `~/.claude/skills/prompt-master` (symlink) -> `setup-ai-tools/prompt-master/` (fuente real)
+- Instalado en Claude: `~/.claude/skills/prompt-master` (symlink) -> `setup-ai-tools/prompt-master/` (fuente real)
+- Instalado en Codex: `$CODEX_HOME/skills/prompt-master` (symlink) -> `setup-ai-tools/adapters/codex/prompt-master`; su `upstream` relativo apunta a la fuente real
 - Alcance: global
 - Version: 1.7.0
 
@@ -152,6 +155,7 @@ Consideraciones:
 - Pregunta max 3 preguntas de clarificacion si falta informacion critica.
 - Para herramientas agentivas agrega automaticamente condiciones de parada y limites de scope.
 - No agrega CoT a modelos de razonamiento nativo (o3, o4-mini, DeepSeek-R1, Qwen3 thinking).
+- El adaptador Codex elimina referencias exclusivas de Claude y exige objetivo, alcance, restricciones, verificación y condición de terminación en los prompts para Codex.
 - Repositorio clonado en: `setup-ai-tools/prompt-master`
 
 ---
@@ -219,17 +223,19 @@ codex mcp get context7
 Consideraciones:
 - Sin API key funciona en modo anonimo con rate limits reducidos.
 - Una cuenta y API key amplian el tier anonimo, pero son opcionales para comenzar.
+- Si `codex` muestra `could not create PATH aliases` dentro de un sandbox restringido, no es un fallo de Context7. Confirma el MCP desde una Terminal normal con `codex mcp get context7`; no filtres `stderr` ni muevas `CODEX_HOME` a `/tmp`.
 - Repositorio clonado en: `setup-ai-tools/context7` (solo referencia, el servidor corre remotamente).
 
 ---
 
 ## Instrucciones de Comportamiento
 
-Reglas instaladas en archivos CLAUDE.md que modifican el comportamiento por defecto de Claude. No son herramientas que Claude invoca, sino configuracion que Claude lee automaticamente al iniciar cada sesion.
+Reglas persistentes que modifican el comportamiento por defecto del agente. No son herramientas que se invocan, sino configuracion que cada plataforma lee automaticamente al iniciar una sesion.
 
 ### claude-token-efficient
 - Repositorio: https://github.com/drona23/claude-token-efficient
-- Instalado en: `~/.claude/CLAUDE.md`
+- Instalado en Claude: `~/.claude/CLAUDE.md`
+- Instalado en Codex: bloque administrado entre `# >>> setup-ai-tools: claude-token-efficient >>>` y `# <<< setup-ai-tools: claude-token-efficient <<<` en `$CODEX_HOME/AGENTS.md`
 - Alcance: global
 
 Conjunto de reglas que reducen el consumo de tokens (~63% menos en output) eliminando comportamientos verbosos por defecto: saludos, cierres, sobre-ingenieria, re-lectura innecesaria de archivos, etc.
@@ -255,21 +261,29 @@ Versiones avanzadas:
 Consideraciones:
 - El archivo CLAUDE.md agrega tokens de entrada en cada mensaje. El beneficio neto solo aplica cuando el volumen de output es alto.
 - Para cambiar de perfil, reemplazar el contenido de `~/.claude/CLAUDE.md` con el perfil deseado.
+- En Codex el instalador actualiza solo su bloque delimitado y preserva las instrucciones del usuario antes y después. Si los marcadores están corruptos, el archivo se conserva sin cambios; tampoco se reemplazan symlinks, directorios ni un `AGENTS.override.md` no vacío que pueda ocultar el archivo global.
 - Repositorio clonado en: `setup-ai-tools/claude-token-efficient`
 
 ---
 
 ### the-architect
 - Repositorio: https://github.com/Hainrixz/the-architect
-- Instalado en: `setup-ai-tools/the-architect/`
+- Instalado en Claude: `setup-ai-tools/the-architect/`
+- Instalado en Codex: `setup-ai-tools/adapters/codex/the-architect/`, con `AGENTS.md`, plantilla de instrucciones para el proyecto destino y un symlink relativo al upstream
 - Alcance: proyecto (requiere navegar al directorio)
 
-Meta-agente de diseno de software. Al abrir Claude Code dentro de su directorio, el CLAUDE.md lo transforma en "The Architect": un agente que convierte una idea en un blueprint completo de 16 secciones listo para ser ejecutado por otra instancia de Claude Code.
+Meta-agente de diseno de software. Al abrir el workspace correspondiente, sus instrucciones transforman al agente en "The Architect": un agente que convierte una idea en un blueprint completo de 16 secciones listo para ser ejecutado por otra instancia de agente.
 
 Como activarlo:
 ```bash
 cd setup-ai-tools/the-architect
 claude
+```
+
+Para Codex:
+```bash
+cd setup-ai-tools/adapters/codex/the-architect
+codex
 ```
 
 Flujo de trabajo (4 fases):
@@ -281,11 +295,12 @@ Flujo de trabajo (4 fases):
 Arquetipos disponibles:
 - SaaS Web App, Marketing Site, Mobile App, API Backend, Internal Tool, Content Platform
 
-El blueprint generado se copia al nuevo proyecto como `CLAUDE.md` y se ejecuta con `claude`.
+En Claude, el blueprint generado se copia al nuevo proyecto como `CLAUDE.md`. En Codex, el adaptador genera el blueprint en `upstream/output/` e incluye un `AGENTS.md` completo para el proyecto destino.
 
 Consideraciones:
 - No instala nada globalmente. Funciona solo dentro de su propio directorio.
 - Usa skills externos durante el diseno: `/deep-research`, `/ui-ux-pro-max`, `/playwright-cli`.
+- En Codex, el adaptador usa las capacidades disponibles por categoría y continúa con supuestos explícitos si no hay búsqueda, documentación o herramientas visuales; no usa comandos slash exclusivos de Claude.
 - El output es un archivo markdown; el usuario decide donde ejecutarlo.
 
 ---

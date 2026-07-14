@@ -23,6 +23,7 @@ Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copi
 ## Que contiene este repo
 
 - `skills/commit-style/` - skill propio (Conventional Commits desde el diff real)
+- `adapters/codex/` - adaptadores propios de skills y workspace exclusivos de Codex
 - `PROJECT_INSTRUCTIONS.md` - fuente generica de instrucciones e inventario
 - `third-party-repos.txt` - manifiesto de repos de terceros (URL + commit)
 - `tool-versions.env` - versiones fijadas de paquetes instalados con otros gestores
@@ -55,10 +56,15 @@ Para generar solamente los archivos de instrucciones, sin clonar ni instalar her
 1. Genera desde `PROJECT_INSTRUCTIONS.md` el archivo local declarado por cada plataforma: `CLAUDE.md`, `AGENTS.md` o ambos.
 2. Verifica las herramientas declaradas para todas las plataformas seleccionadas.
 3. Crea los repos ausentes y reconcilia los existentes contra su URL y version declaradas.
-4. Instala en Claude y Codex los skills que tienen soporte verificado, sin sobrescribir instalaciones ajenas.
+4. Instala en Claude y Codex los skills compatibles, sin sobrescribir instalaciones ajenas.
 5. Instala claude-mem para cada plataforma, arranca su worker y registra Context7.
 
-Las herramientas de Codex que todavia necesitan adaptación (`prompt-master`, `abogado-del-diablo`, `the-architect` y `claude-token-efficient`) se omiten de forma explícita; el resto queda funcionando automáticamente.
+En Codex, `prompt-master` y `abogado-del-diablo` se instalan como symlinks a
+`adapters/codex/`; los adaptadores conservan los repos upstream solo como
+referencia. `the-architect` se usa desde el workspace
+`adapters/codex/the-architect/`. Las reglas de `claude-token-efficient` se
+insertan en el bloque administrado de `$CODEX_HOME/AGENTS.md`, preservando las
+instrucciones del usuario que estén fuera de ese bloque.
 
 Los archivos generados llevan una marca de administracion. Si encuentra un `CLAUDE.md` o `AGENTS.md` ajeno, cambios Git rastreados, un `origin` diferente, una carpeta real o un symlink que apunta a otra fuente, se detiene sin reemplazar ese elemento.
 
@@ -77,6 +83,11 @@ La migracion solo reemplaza symlinks; nunca elimina carpetas reales. La ruta, el
 
 Context7 funciona de inmediato en el tier anonimo; agregar una API key es opcional.
 
+Al ejecutar `codex` dentro de un sandbox restringido puede aparecer `could not
+create PATH aliases`. No es un error de Context7: verifícalo desde una Terminal
+normal con `codex mcp get context7`. No ocultes `stderr` ni muevas `CODEX_HOME`
+a `/tmp` para silenciar ese aviso.
+
 ## Terceros
 
 Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, context7, claude-token-efficient, the-architect) son repos independientes con licencia MIT, propiedad de sus autores. Aqui solo se referencian por URL; su codigo no forma parte de este repo. Ver `third-party-repos.txt` y la seccion correspondiente en `PROJECT_INSTRUCTIONS.md`.
@@ -84,7 +95,7 @@ Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, con
 ## Versiones al clonar en una maquina nueva
 
 - `pinned` (superpowers, prompt-master, abogado-del-diablo, the-architect): la maquina nueva queda en el mismo commit que la anterior. Reproducible.
-- `shallow` (context7, claude-token-efficient): traen el ultimo estado de la rama al momento de correr `install.sh`, NO una version fija. Es intencional porque son solo referencia (el MCP de context7 corre remoto y las reglas de token-efficient ya viven en `~/.claude/CLAUDE.md`). Si el autor upstream las cambia, recibiras la version nueva.
+- `shallow` (context7, claude-token-efficient): traen el ultimo estado de la rama al momento de correr `install.sh`, NO una version fija. Es intencional porque son solo referencia (el MCP de Context7 corre remoto y las reglas de token-efficient se publican en Claude y Codex). Si el autor upstream las cambia, recibiras la version nueva.
 
 Para fijar uno de los `shallow`: en `third-party-repos.txt` cambia su modo a `pinned` y pon un commit; borra su carpeta y vuelve a correr `install.sh`.
 

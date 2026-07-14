@@ -20,6 +20,7 @@ bash -n manage.sh
 bash -n verify-compatibility.sh
 bash -n tests/test_install.sh
 bash -n tests/test_compatibility.sh
+bash -n tests/test_codex_adapters.sh
 bash -n tests/test_instructions.sh
 bash -n tests/test_manage.sh
 pass "sintaxis Bash"
@@ -121,6 +122,9 @@ pass "regresiones de install.sh"
 ./tests/test_compatibility.sh
 pass "verificador extensible sin plataformas codificadas"
 
+./tests/test_codex_adapters.sh
+pass "adaptadores Codex y manifiesto de compatibilidad"
+
 ./tests/test_instructions.sh
 pass "instrucciones locales generadas por plataforma"
 
@@ -132,5 +136,8 @@ pass "manifiestos de mantenimiento consistentes"
 
 ./verify-compatibility.sh --platform claude --phase post
 pass "compatibilidad Claude"
+
+./verify-compatibility.sh --platform codex --phase post
+pass "compatibilidad Codex"
 
 echo "AUDITORIA COMPLETA: todos los problemas originales estan cubiertos"

@@ -50,6 +50,9 @@ mkdir -p \
   "$PROJECT/skills/commit-style" \
   "$PROJECT/prompt-master" \
   "$PROJECT/abogado-del-diablo/skills/abogado-del-diablo" \
+  "$PROJECT/adapters/codex/prompt-master" \
+  "$PROJECT/adapters/codex/abogado-del-diablo" \
+  "$PROJECT/adapters/codex/the-architect" \
   "$PROJECT/context7/packages/mcp" \
   "$PROJECT/context7/plugins/codex/context7/skills/context7-mcp" \
   "$PROJECT/the-architect" \
@@ -57,6 +60,12 @@ mkdir -p \
 printf '%s\n' '# skill' > "$PROJECT/skills/commit-style/SKILL.md"
 printf '%s\n' '# skill' > "$PROJECT/prompt-master/SKILL.md"
 printf '%s\n' '# skill' > "$PROJECT/abogado-del-diablo/skills/abogado-del-diablo/SKILL.md"
+printf '%s\n' '# adapter' > "$PROJECT/adapters/codex/prompt-master/SKILL.md"
+printf '%s\n' '# adapter' > "$PROJECT/adapters/codex/abogado-del-diablo/SKILL.md"
+printf '%s\n' '# architect adapter' > "$PROJECT/adapters/codex/the-architect/AGENTS.md"
+ln -s ../../../prompt-master "$PROJECT/adapters/codex/prompt-master/upstream"
+ln -s ../../../abogado-del-diablo/skills/abogado-del-diablo \
+  "$PROJECT/adapters/codex/abogado-del-diablo/upstream"
 printf '%s\n' '{}' > "$PROJECT/context7/packages/mcp/package.json"
 printf '%s\n' '# context7' > "$PROJECT/context7/plugins/codex/context7/skills/context7-mcp/SKILL.md"
 printf '%s\n' '# architect' > "$PROJECT/the-architect/CLAUDE.md"
@@ -147,8 +156,104 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX" CODEX_HOME="$HOME_CODEX/.codex" \
 [ -L "$HOME_CODEX/.codex/skills/commit-style" ] || fail "Codex no recibio commit-style"
 [ -L "$HOME_CODEX/.codex/skills/using-superpowers" ] || fail "Codex no recibio superpowers"
 [ -L "$HOME_CODEX/.codex/skills/context7-mcp" ] || fail "Codex no recibio Context7"
+[ -L "$HOME_CODEX/.codex/skills/prompt-master" ] || fail "Codex no recibio prompt-master"
+[ "$(readlink "$HOME_CODEX/.codex/skills/prompt-master")" = "$PROJECT/adapters/codex/prompt-master" ] \
+  || fail "Codex no enlazo el adaptador prompt-master"
+[ -L "$HOME_CODEX/.codex/skills/abogado-del-diablo" ] || fail "Codex no recibio abogado-del-diablo"
+[ "$(readlink "$HOME_CODEX/.codex/skills/abogado-del-diablo")" = "$PROJECT/adapters/codex/abogado-del-diablo" ] \
+  || fail "Codex no enlazo el adaptador abogado-del-diablo"
 [ ! -e "$HOME_CODEX/.claude/settings.json" ] || fail "instalar solo Codex modifico settings de Claude"
 assert_file_contains "$MOCK_LOG" "claude-mem@13.10.4 install --ide codex-cli"
+
+echo "TEST: instala reglas claude-token-efficient en el AGENTS.md global de Codex"
+TOKEN_BEGIN='# >>> setup-ai-tools: claude-token-efficient >>>'
+TOKEN_END='# <<< setup-ai-tools: claude-token-efficient <<<'
+HOME_TOKEN_EMPTY="$TMP/home-token-empty"
+mkdir -p "$HOME_TOKEN_EMPTY"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_EMPTY" CODEX_HOME="$HOME_TOKEN_EMPTY/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-empty.log"
+assert_file_contains "$HOME_TOKEN_EMPTY/.codex/AGENTS.md" "$TOKEN_BEGIN"
+assert_file_contains "$HOME_TOKEN_EMPTY/.codex/AGENTS.md" '# rules'
+assert_file_contains "$HOME_TOKEN_EMPTY/.codex/AGENTS.md" "$TOKEN_END"
+
+echo "TEST: conserva instrucciones de usuario y actualiza un unico bloque de Codex"
+HOME_TOKEN_USER="$TMP/home-token-user"
+mkdir -p "$HOME_TOKEN_USER/.codex"
+printf '%s\n' 'instruccion personal antes' 'instruccion personal despues' \
+  > "$HOME_TOKEN_USER/.codex/AGENTS.md"
+chmod 640 "$HOME_TOKEN_USER/.codex/AGENTS.md"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_USER" CODEX_HOME="$HOME_TOKEN_USER/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-user-first.log"
+assert_file_contains "$HOME_TOKEN_USER/.codex/AGENTS.md" 'instruccion personal antes'
+assert_file_contains "$HOME_TOKEN_USER/.codex/AGENTS.md" 'instruccion personal despues'
+[ "$(stat -f '%Lp' "$HOME_TOKEN_USER/.codex/AGENTS.md")" = 640 ] \
+  || fail "claude-token-efficient no preservo los permisos de AGENTS.md"
+printf '%s\n' '# reglas actualizadas' > "$PROJECT/claude-token-efficient/CLAUDE.md"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_USER" CODEX_HOME="$HOME_TOKEN_USER/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-user-second.log"
+assert_file_contains "$HOME_TOKEN_USER/.codex/AGENTS.md" '# reglas actualizadas'
+[ "$(grep -Fxc "$TOKEN_BEGIN" "$HOME_TOKEN_USER/.codex/AGENTS.md")" -eq 1 ] \
+  || fail "claude-token-efficient duplico el marcador inicial"
+[ "$(grep -Fxc "$TOKEN_END" "$HOME_TOKEN_USER/.codex/AGENTS.md")" -eq 1 ] \
+  || fail "claude-token-efficient duplico el marcador final"
+
+echo "TEST: no modifica destinos inseguros de AGENTS.md para Codex"
+HOME_TOKEN_SYMLINK="$TMP/home-token-symlink"
+TOKEN_FOREIGN="$TMP/token-foreign-agents.md"
+mkdir -p "$HOME_TOKEN_SYMLINK/.codex"
+printf '%s\n' 'no tocar symlink' > "$TOKEN_FOREIGN"
+ln -s "$TOKEN_FOREIGN" "$HOME_TOKEN_SYMLINK/.codex/AGENTS.md"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_SYMLINK" CODEX_HOME="$HOME_TOKEN_SYMLINK/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-symlink.log" 2>&1
+[ -L "$HOME_TOKEN_SYMLINK/.codex/AGENTS.md" ] || fail "claude-token-efficient reemplazo un symlink"
+assert_file_contains "$TOKEN_FOREIGN" 'no tocar symlink'
+assert_file_contains "$TMP/token-symlink.log" 'AGENTS.md es un symlink'
+
+HOME_TOKEN_DIRECTORY="$TMP/home-token-directory"
+mkdir -p "$HOME_TOKEN_DIRECTORY/.codex/AGENTS.md"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_DIRECTORY" CODEX_HOME="$HOME_TOKEN_DIRECTORY/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-directory.log" 2>&1
+[ -d "$HOME_TOKEN_DIRECTORY/.codex/AGENTS.md" ] || fail "claude-token-efficient reemplazo un directorio"
+assert_file_contains "$TMP/token-directory.log" 'AGENTS.md existe y no es un archivo regular'
+
+HOME_TOKEN_CORRUPT="$TMP/home-token-corrupt"
+mkdir -p "$HOME_TOKEN_CORRUPT/.codex"
+printf '%s\n' 'instruccion personal' "$TOKEN_BEGIN" 'bloque incompleto' \
+  > "$HOME_TOKEN_CORRUPT/.codex/AGENTS.md"
+TOKEN_CORRUPT_HASH="$(shasum -a 256 "$HOME_TOKEN_CORRUPT/.codex/AGENTS.md" | awk '{print $1}')"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_CORRUPT" CODEX_HOME="$HOME_TOKEN_CORRUPT/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-corrupt.log" 2>&1
+[ "$TOKEN_CORRUPT_HASH" = "$(shasum -a 256 "$HOME_TOKEN_CORRUPT/.codex/AGENTS.md" | awk '{print $1}')" ] \
+  || fail "claude-token-efficient modifico marcadores corruptos"
+assert_file_contains "$TMP/token-corrupt.log" 'marcadores administrados corruptos'
+
+echo "TEST: conserva AGENTS.md con variantes de marcadores administrados"
+variant_index=0
+for marker_variant in \
+  "$TOKEN_BEGIN " \
+  "${TOKEN_BEGIN}sufijo" \
+  "$TOKEN_END " \
+  "${TOKEN_END}sufijo"; do
+  variant_index=$((variant_index + 1))
+  HOME_TOKEN_VARIANT="$TMP/home-token-variant-$variant_index"
+  mkdir -p "$HOME_TOKEN_VARIANT/.codex"
+  printf '%s\n' 'instruccion personal' "$marker_variant" 'contenido que se debe conservar' \
+    > "$HOME_TOKEN_VARIANT/.codex/AGENTS.md"
+  TOKEN_VARIANT_HASH="$(shasum -a 256 "$HOME_TOKEN_VARIANT/.codex/AGENTS.md" | awk '{print $1}')"
+  PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_VARIANT" CODEX_HOME="$HOME_TOKEN_VARIANT/.codex" \
+    "$PROJECT/install.sh" --platform codex > "$TMP/token-variant.log" 2>&1
+  [ "$TOKEN_VARIANT_HASH" = "$(shasum -a 256 "$HOME_TOKEN_VARIANT/.codex/AGENTS.md" | awk '{print $1}')" ] \
+    || fail "claude-token-efficient modifico una variante de marcador administrado"
+  assert_file_contains "$TMP/token-variant.log" 'marcadores administrados corruptos'
+done
+
+echo "TEST: avisa si AGENTS.override.md no vacio oculta el AGENTS.md global"
+HOME_TOKEN_OVERRIDE="$TMP/home-token-override"
+mkdir -p "$HOME_TOKEN_OVERRIDE/.codex"
+printf '%s\n' 'regla de override' > "$HOME_TOKEN_OVERRIDE/.codex/AGENTS.override.md"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_TOKEN_OVERRIDE" CODEX_HOME="$HOME_TOKEN_OVERRIDE/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/token-override.log" 2>&1
+assert_file_contains "$TMP/token-override.log" 'AGENTS.override.md no vacio'
 
 echo "TEST: install.sh sin opciones autodetecta y configura ambas plataformas"
 HOME_AUTO="$TMP/home-auto"
