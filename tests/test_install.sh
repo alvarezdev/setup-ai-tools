@@ -75,10 +75,16 @@ printf '%s\n' \
   > "$MOCK_BIN/claude"
 printf '%s\n' \
   '#!/usr/bin/env bash' \
+  'if [ "${1:-}" = "--version" ]; then echo "codex-test 1.0"; exit 0; fi' \
+  'if [ "${1:-} ${2:-} ${3:-}" = "mcp get context7" ]; then exit 0; fi' \
+  'exit 0' \
+  > "$MOCK_BIN/codex"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
   'printf "%s\n" "$*" >> "$MOCK_LOG"' \
   'exit 0' \
   > "$MOCK_BIN/npx"
-chmod +x "$MOCK_BIN/claude" "$MOCK_BIN/npx"
+chmod +x "$MOCK_BIN/claude" "$MOCK_BIN/codex" "$MOCK_BIN/npx"
 export MOCK_LOG
 
 run_install() {
@@ -155,25 +161,89 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_AUTO" CODEX_HOME="$HOME_AUTO/.codex" \
 [ -L "$HOME_AUTO/.codex/skills/commit-style" ] || fail "autodeteccion no provisiono Codex"
 assert_file_contains "$TMP/install-auto.log" "Instalacion terminada"
 
-echo "TEST: rechaza y conserva un symlink administrado por otra fuente"
+echo "TEST: conserva un symlink ajeno y continua con las demas herramientas"
 HOME_TWO="$TMP/home-two"
 FOREIGN_TARGET="$TMP/foreign-skill"
 mkdir -p "$HOME_TWO/.claude/skills" "$FOREIGN_TARGET"
 ln -s "$FOREIGN_TARGET" "$HOME_TWO/.claude/skills/commit-style"
-if run_install "$HOME_TWO" > "$TMP/foreign-link.log" 2>&1; then
-  fail "install acepto un symlink ajeno"
-fi
+run_install "$HOME_TWO" > "$TMP/foreign-link.log" 2>&1
 [ -L "$HOME_TWO/.claude/skills/commit-style" ] || fail "symlink ajeno fue eliminado"
 [ "$(readlink "$HOME_TWO/.claude/skills/commit-style")" = "$FOREIGN_TARGET" ] || fail "symlink ajeno fue alterado"
+assert_file_contains "$TMP/foreign-link.log" "Conflictos conservados"
+assert_file_contains "$TMP/foreign-link.log" "claude/commit-style"
 
-echo "TEST: rechaza y conserva una carpeta real en el destino"
+echo "TEST: conserva una carpeta real y continua con las demas herramientas"
 HOME_THREE="$TMP/home-three"
 mkdir -p "$HOME_THREE/.claude/skills/commit-style"
 printf '%s\n' 'preserve me' > "$HOME_THREE/.claude/skills/commit-style/user-file.txt"
-if run_install "$HOME_THREE" > "$TMP/real-directory.log" 2>&1; then
-  fail "install acepto una carpeta real"
-fi
+run_install "$HOME_THREE" > "$TMP/real-directory.log" 2>&1
 assert_file_contains "$HOME_THREE/.claude/skills/commit-style/user-file.txt" "preserve me"
+assert_file_contains "$TMP/real-directory.log" "destino real"
+
+echo "TEST: reutiliza Superpowers externo cuando origin y commit coinciden"
+EXTERNAL_SAME="$TMP/external-superpowers-same"
+git clone -q "$ORIGIN" "$EXTERNAL_SAME"
+git -C "$EXTERNAL_SAME" checkout -q --detach "$PINNED_COMMIT"
+HOME_SAME="$TMP/home-superpowers-same"
+mkdir -p "$HOME_SAME/.claude/skills"
+ln -s "$EXTERNAL_SAME/skills/using-superpowers" "$HOME_SAME/.claude/skills/using-superpowers"
+run_install "$HOME_SAME" > "$TMP/superpowers-same.log"
+[ "$(readlink "$HOME_SAME/.claude/skills/using-superpowers")" = "$EXTERNAL_SAME/skills/using-superpowers" ] \
+  || fail "no reutilizo Superpowers externo compatible"
+assert_file_contains "$TMP/superpowers-same.log" "REUSE claude/superpowers"
+python3 - "$HOME_SAME/.claude/settings.json" "$EXTERNAL_SAME" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+assert data["env"]["CLAUDE_PLUGIN_ROOT"] == sys.argv[2]
+PY
+
+echo "TEST: conserva Superpowers externo diferente y permite migrarlo explicitamente"
+EXTERNAL_DIFFERENT="$TMP/external-superpowers-different"
+git clone -q "$ORIGIN" "$EXTERNAL_DIFFERENT"
+[ "$(git -C "$EXTERNAL_DIFFERENT" rev-parse HEAD)" = "$NEWER_COMMIT" ] \
+  || fail "fixture externo no usa el commit diferente"
+HOME_DIFFERENT="$TMP/home-superpowers-different"
+mkdir -p "$HOME_DIFFERENT/.claude/skills"
+ln -s "$EXTERNAL_DIFFERENT/skills/using-superpowers" "$HOME_DIFFERENT/.claude/skills/using-superpowers"
+run_install "$HOME_DIFFERENT" > "$TMP/superpowers-different.log" 2>&1
+[ "$(readlink "$HOME_DIFFERENT/.claude/skills/using-superpowers")" = "$EXTERNAL_DIFFERENT/skills/using-superpowers" ] \
+  || fail "altero Superpowers externo sin autorizacion"
+[ -L "$HOME_DIFFERENT/.claude/skills/commit-style" ] \
+  || fail "el conflicto de Superpowers detuvo otras herramientas"
+assert_file_contains "$TMP/superpowers-different.log" "externa=$ORIGIN@$NEWER_COMMIT"
+
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_DIFFERENT" \
+  "$PROJECT/install.sh" --platform claude --migrate-tool superpowers \
+  > "$TMP/superpowers-migrated.log"
+[ "$(readlink "$HOME_DIFFERENT/.claude/skills/using-superpowers")" = "$PROJECT/superpowers/skills/using-superpowers" ] \
+  || fail "la migracion explicita no adopto Superpowers"
+MIGRATION_LOG="$HOME_DIFFERENT/.local/state/setup-skills/migrations.log"
+assert_file_contains "$MIGRATION_LOG" "previous_target=$EXTERNAL_DIFFERENT"
+assert_file_contains "$MIGRATION_LOG" "previous_commit=$NEWER_COMMIT"
+assert_file_contains "$MIGRATION_LOG" "new_target=$PROJECT/superpowers"
+
+echo "TEST: aplica la misma proteccion y migracion de Superpowers en Codex"
+HOME_CODEX_DIFFERENT="$TMP/home-codex-superpowers-different"
+mkdir -p "$HOME_CODEX_DIFFERENT/.codex/skills"
+ln -s "$EXTERNAL_DIFFERENT/skills/using-superpowers" \
+  "$HOME_CODEX_DIFFERENT/.codex/skills/using-superpowers"
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX_DIFFERENT" CODEX_HOME="$HOME_CODEX_DIFFERENT/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/codex-superpowers-different.log" 2>&1
+[ "$(readlink "$HOME_CODEX_DIFFERENT/.codex/skills/using-superpowers")" = "$EXTERNAL_DIFFERENT/skills/using-superpowers" ] \
+  || fail "Codex altero Superpowers externo sin autorizacion"
+[ -L "$HOME_CODEX_DIFFERENT/.codex/skills/commit-style" ] \
+  || fail "el conflicto de Superpowers detuvo otras skills de Codex"
+assert_file_contains "$TMP/codex-superpowers-different.log" "codex/superpowers"
+
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX_DIFFERENT" CODEX_HOME="$HOME_CODEX_DIFFERENT/.codex" \
+  "$PROJECT/install.sh" --platform codex --migrate-tool superpowers \
+  > "$TMP/codex-superpowers-migrated.log"
+[ "$(readlink "$HOME_CODEX_DIFFERENT/.codex/skills/using-superpowers")" = "$PROJECT/superpowers/skills/using-superpowers" ] \
+  || fail "Codex no migro Superpowers con autorizacion explicita"
+assert_file_contains "$HOME_CODEX_DIFFERENT/.local/state/setup-skills/migrations.log" "platform=codex"
 
 echo "TEST: rechaza un repositorio con origin ajeno"
 HOME_FOUR="$TMP/home-four"
@@ -193,5 +263,48 @@ if run_install "$HOME_FIVE" > "$TMP/invalid-settings.log" 2>&1; then
 fi
 AFTER_HASH="$(shasum -a 256 "$HOME_FIVE/.claude/settings.json" | awk '{print $1}')"
 [ "$BEFORE_HASH" = "$AFTER_HASH" ] || fail "settings.json invalido fue modificado"
+
+echo "TEST: migra una instalacion al mover el proyecto para Claude y Codex"
+OLD_PROJECT="$PROJECT"
+STATE_FILE="$HOME_AUTO/.local/state/setup-skills/managed-roots"
+[ -f "$STATE_FILE" ] || fail "install no registro la ruta administrada"
+# Simula una instalacion creada antes de que existiera el registro de rutas.
+rm -f "$STATE_FILE"
+mkdir -p "$TMP/relocated"
+PROJECT="$TMP/relocated/setup-skills"
+mv "$OLD_PROJECT" "$PROJECT"
+
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_AUTO" CODEX_HOME="$HOME_AUTO/.codex" \
+  "$PROJECT/install.sh" --platform claude > "$TMP/install-relocated-claude.log"
+[ "$(readlink "$HOME_AUTO/.claude/skills/commit-style")" = "$PROJECT/skills/commit-style" ] \
+  || fail "Claude no migro commit-style a la nueva ruta"
+[ "$(readlink "$HOME_AUTO/.codex/skills/commit-style")" = "$OLD_PROJECT/skills/commit-style" ] \
+  || fail "la migracion de Claude altero Codex antes de seleccionarlo"
+assert_file_contains "$STATE_FILE" "$OLD_PROJECT"
+assert_file_contains "$STATE_FILE" "$PROJECT"
+
+PATH="$MOCK_BIN:$PATH" HOME="$HOME_AUTO" CODEX_HOME="$HOME_AUTO/.codex" \
+  "$PROJECT/install.sh" --platform codex > "$TMP/install-relocated-codex.log"
+[ "$(readlink "$HOME_AUTO/.codex/skills/commit-style")" = "$PROJECT/skills/commit-style" ] \
+  || fail "Codex no migro commit-style a la nueva ruta"
+assert_file_contains "$TMP/install-relocated-claude.log" "Instalacion anterior detectada en: $OLD_PROJECT"
+assert_file_contains "$TMP/install-relocated-codex.log" "MIG Codex/commit-style"
+
+python3 - "$HOME_AUTO/.claude/settings.json" "$PROJECT/superpowers" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+root = sys.argv[2]
+assert data["env"]["CLAUDE_PLUGIN_ROOT"] == root
+commands = [
+    hook.get("command")
+    for group in data["hooks"]["SessionStart"]
+    for hook in group.get("hooks", [])
+    if isinstance(hook, dict)
+]
+assert commands == [f"{root}/hooks/run-hook.cmd session-start"]
+PY
 
 echo "PASS: todas las pruebas de install.sh"

@@ -42,6 +42,8 @@ Como funciona:
 - `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
 - `manage.sh validate` comprueba la estructura y consistencia cruzada de todos los manifiestos; `manage.sh audit` agrega la suite completa de regresion. Una herramienta nueva que requiera hooks o comandos propios tambien debe incorporar su provisionamiento en `install.sh` y sus pruebas.
 - El instalador es convergente para repos `pinned`: valida `origin`, estado Git y commit. No reemplaza carpetas reales ni symlinks que apunten fuera de este proyecto.
+- Si el repositorio cambia de ubicacion, `install.sh` migra los symlinks administrados de Claude y Codex. Conserva el historial de rutas en `~/.local/state/setup-skills/managed-roots` y puede reconocer instalaciones antiguas mediante varios symlinks rotos que coincidan con la estructura esperada.
+- Las herramientas ajenas se conservan y ya no detienen toda la instalacion. Para Superpowers, una copia externa limpia con el mismo origin y commit se reutiliza; una version diferente se omite solo en la plataforma afectada. `--migrate-tool superpowers` transfiere explicitamente sus symlinks y registra ruta, origin y commit anteriores en `~/.local/state/setup-skills/migrations.log`; nunca reemplaza carpetas reales.
 - `settings.json` se valida estructuralmente y se reemplaza de forma atomica, preservando grupos `SessionStart` existentes y evitando hooks duplicados.
 
 Uso en maquina nueva:

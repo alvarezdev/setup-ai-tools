@@ -60,6 +60,17 @@ Las herramientas de Codex que todavia necesitan adaptación (`prompt-master`, `a
 
 Los archivos generados llevan una marca de administracion. Si encuentra un `CLAUDE.md` o `AGENTS.md` ajeno, cambios Git rastreados, un `origin` diferente, una carpeta real o un symlink que apunta a otra fuente, se detiene sin reemplazar ese elemento.
 
+El repositorio puede moverse a otra carpeta. `install.sh` conserva por defecto en `~/.local/state/setup-skills/managed-roots` las rutas que ha administrado y, al ejecutarse desde la nueva ubicacion, migra los symlinks de Claude y Codex sin tocar destinos ajenos. Las instalaciones anteriores a este registro tambien se reconocen cuando existen varios symlinks rotos y consistentes con la estructura de `setup-skills`.
+
+Si ya existe una herramienta instalada por otra fuente, el instalador no la reemplaza ni detiene las herramientas restantes. Para Superpowers compara `origin`, commit y estado Git: reutiliza una instalacion externa identica; si difiere, la conserva, omite solo esa integracion y muestra el conflicto al final. La transferencia de administracion debe ser explicita:
+
+```bash
+./install.sh --platform claude --migrate-tool superpowers
+./install.sh --platform codex --migrate-tool superpowers
+```
+
+La migracion solo reemplaza symlinks; nunca elimina carpetas reales. La ruta, el origin y el commit anteriores quedan registrados en `~/.local/state/setup-skills/migrations.log` para facilitar una restauracion manual.
+
 Context7 funciona de inmediato en el tier anonimo; agregar una API key es opcional.
 
 ## Terceros
