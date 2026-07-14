@@ -23,7 +23,7 @@ No omitas este paso aunque la instalacion haya sido simple.
 
 ## Portabilidad y `install.sh`
 
-Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-skills` en una maquina nueva, correr un script, y quedar configurado.
+Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-ai-tools` en una maquina nueva, correr un script, y quedar configurado.
 
 Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
@@ -42,14 +42,14 @@ Como funciona:
 - `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
 - `manage.sh validate` comprueba la estructura y consistencia cruzada de todos los manifiestos; `manage.sh audit` agrega la suite completa de regresion. Una herramienta nueva que requiera hooks o comandos propios tambien debe incorporar su provisionamiento en `install.sh` y sus pruebas.
 - El instalador es convergente para repos `pinned`: valida `origin`, estado Git y commit. No reemplaza carpetas reales ni symlinks que apunten fuera de este proyecto.
-- Si el repositorio cambia de ubicacion, `install.sh` migra los symlinks administrados de Claude y Codex. Conserva el historial de rutas en `~/.local/state/setup-skills/managed-roots` y puede reconocer instalaciones antiguas mediante varios symlinks rotos que coincidan con la estructura esperada.
-- Las herramientas ajenas se conservan y ya no detienen toda la instalacion. Para Superpowers, una copia externa limpia con el mismo origin y commit se reutiliza; una version diferente se omite solo en la plataforma afectada. `--migrate-tool superpowers` transfiere explicitamente sus symlinks y registra ruta, origin y commit anteriores en `~/.local/state/setup-skills/migrations.log`; nunca reemplaza carpetas reales.
+- Si el repositorio cambia de ubicacion, `install.sh` migra los symlinks administrados de Claude y Codex. Conserva el historial de rutas en `~/.local/state/setup-ai-tools/managed-roots` y puede reconocer instalaciones antiguas mediante varios symlinks rotos que coincidan con la estructura esperada. El estado creado anteriormente bajo `~/.local/state/setup-skills` se importa automaticamente.
+- Las herramientas ajenas se conservan y ya no detienen toda la instalacion. Para Superpowers, una copia externa limpia con el mismo origin y commit se reutiliza; una version diferente se omite solo en la plataforma afectada. `--migrate-tool superpowers` transfiere explicitamente sus symlinks y registra ruta, origin y commit anteriores en `~/.local/state/setup-ai-tools/migrations.log`; nunca reemplaza carpetas reales.
 - `settings.json` se valida estructuralmente y se reemplaza de forma atomica, preservando grupos `SessionStart` existentes y evitando hooks duplicados.
 
 Uso en maquina nueva:
 ```bash
-git clone <url-del-repo> setup-skills
-cd setup-skills
+git clone <url-del-repo> setup-ai-tools
+cd setup-ai-tools
 ./install.sh
 ```
 
@@ -69,7 +69,7 @@ Skills instalados mediante symlinks en `~/.claude/skills/` y, cuando son compati
 
 ### Superpowers
 - Repositorio: https://github.com/obra/superpowers
-- Instalado en: `~/.claude/skills/<nombre>` y `$CODEX_HOME/skills/<nombre>` (symlinks) -> `setup-skills/superpowers/skills/<nombre>`; Claude agrega su hook SessionStart mediante `install.sh`
+- Instalado en: `~/.claude/skills/<nombre>` y `$CODEX_HOME/skills/<nombre>` (symlinks) -> `setup-ai-tools/superpowers/skills/<nombre>`; Claude agrega su hook SessionStart mediante `install.sh`
 - Alcance: global
 
 Metodologia completa de desarrollo de software para agentes de codificacion. Al iniciar sesion, inyecta automaticamente instrucciones via hook y pone a disposicion un conjunto de skills que el agente debe invocar segun el contexto.
@@ -92,13 +92,13 @@ Skills disponibles:
 Consideraciones:
 - Los skills se invocan con el tool `Skill`, no leyendo los archivos directamente.
 - El hook `SessionStart` requiere que `CLAUDE_PLUGIN_ROOT` apunte al repositorio clonado.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/superpowers`
+- Repositorio clonado en: `setup-ai-tools/superpowers`
 
 ---
 
 ### abogado-del-diablo
 - Repositorio: https://github.com/Hainrixz/abogado-del-diablo
-- Instalado en: `~/.claude/skills/abogado-del-diablo` (symlink) -> `setup-skills/abogado-del-diablo/skills/abogado-del-diablo` (fuente real)
+- Instalado en: `~/.claude/skills/abogado-del-diablo` (symlink) -> `setup-ai-tools/abogado-del-diablo/skills/abogado-del-diablo` (fuente real)
 - Alcance: global
 - Version: 1.0.0
 
@@ -125,13 +125,13 @@ Formato de salida: VEREDICTO brutal, grietas ordenadas por severidad, causa de m
 Consideraciones:
 - Si hay web search disponible, busca casos reales de fracasos similares antes de opinar.
 - Para demolicion profunda lanza subagentes con `Task`, uno por angulo.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/abogado-del-diablo`
+- Repositorio clonado en: `setup-ai-tools/abogado-del-diablo`
 
 ---
 
 ### prompt-master
 - Repositorio: https://github.com/nidhinjs/prompt-master
-- Instalado en: `~/.claude/skills/prompt-master` (symlink) -> `setup-skills/prompt-master/` (fuente real)
+- Instalado en: `~/.claude/skills/prompt-master` (symlink) -> `setup-ai-tools/prompt-master/` (fuente real)
 - Alcance: global
 - Version: 1.7.0
 
@@ -152,13 +152,13 @@ Consideraciones:
 - Pregunta max 3 preguntas de clarificacion si falta informacion critica.
 - Para herramientas agentivas agrega automaticamente condiciones de parada y limites de scope.
 - No agrega CoT a modelos de razonamiento nativo (o3, o4-mini, DeepSeek-R1, Qwen3 thinking).
-- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/prompt-master`
+- Repositorio clonado en: `setup-ai-tools/prompt-master`
 
 ---
 
 ### commit-style
 - Origen: creado por el usuario. Fuente base en `appguarderia/docs/ai/commit_style_skill.md`
-- Instalado en: `~/.claude/skills/commit-style/` y `$CODEX_HOME/skills/commit-style/` (symlinks) -> `setup-skills/skills/commit-style/`
+- Instalado en: `~/.claude/skills/commit-style/` y `$CODEX_HOME/skills/commit-style/` (symlinks) -> `setup-ai-tools/skills/commit-style/`
 - Alcance: global
 
 Skill que genera propuestas de mensaje de commit en estilo Conventional Commits a partir del diff real del repositorio. Titulo corto en ingles con verbo imperativo, cuerpo con bullets concretos, y notas de validacion solo cuando hay evidencia de que se ejecuto.
@@ -219,7 +219,7 @@ codex mcp get context7
 Consideraciones:
 - Sin API key funciona en modo anonimo con rate limits reducidos.
 - Una cuenta y API key amplian el tier anonimo, pero son opcionales para comenzar.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/context7` (solo referencia, el servidor corre remotamente).
+- Repositorio clonado en: `setup-ai-tools/context7` (solo referencia, el servidor corre remotamente).
 
 ---
 
@@ -255,20 +255,20 @@ Versiones avanzadas:
 Consideraciones:
 - El archivo CLAUDE.md agrega tokens de entrada en cada mensaje. El beneficio neto solo aplica cuando el volumen de output es alto.
 - Para cambiar de perfil, reemplazar el contenido de `~/.claude/CLAUDE.md` con el perfil deseado.
-- Repositorio clonado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/claude-token-efficient`
+- Repositorio clonado en: `setup-ai-tools/claude-token-efficient`
 
 ---
 
 ### the-architect
 - Repositorio: https://github.com/Hainrixz/the-architect
-- Instalado en: `/Users/hectoralvarez/Development/ai/Claude/setup-skills/the-architect/`
+- Instalado en: `setup-ai-tools/the-architect/`
 - Alcance: proyecto (requiere navegar al directorio)
 
 Meta-agente de diseno de software. Al abrir Claude Code dentro de su directorio, el CLAUDE.md lo transforma en "The Architect": un agente que convierte una idea en un blueprint completo de 16 secciones listo para ser ejecutado por otra instancia de Claude Code.
 
 Como activarlo:
 ```bash
-cd /Users/hectoralvarez/Development/ai/Claude/setup-skills/the-architect
+cd setup-ai-tools/the-architect
 claude
 ```
 

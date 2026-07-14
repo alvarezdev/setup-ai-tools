@@ -1,4 +1,4 @@
-# setup-skills
+# setup-ai-tools
 
 Configuracion portable de herramientas de IA para terminal, con trazabilidad para moverla entre maquinas o compartirla. La fuente del proyecto es independiente de Claude Code y Codex.
 
@@ -6,12 +6,14 @@ Configuracion portable de herramientas de IA para terminal, con trazabilidad par
 
 Si ya estas usando Claude Code, Codex u otro agente, solo dile exactamente esto:
 
-> Clona `https://github.com/alvarezdev/setup-skills.git` y ejecuta su instalador.
+> Clona `https://github.com/alvarezdev/setup-ai-tools.git` y ejecuta su instalador.
+
+El agente que ejecuta el instalador funciona como operador: cualquier agente puede configurar cualquier plataforma registrada.
 
 Eso es todo. No necesitas conocer comandos, elegir plataformas ni configurar archivos manualmente. El agente clonara el repositorio y ejecutara:
 
 ```bash
-git clone https://github.com/alvarezdev/setup-skills.git && cd setup-skills && ./install.sh
+git clone https://github.com/alvarezdev/setup-ai-tools.git && cd setup-ai-tools && ./install.sh
 ```
 
 El instalador detecta los agentes disponibles, configura lo compatible y arranca los servicios automaticamente.
@@ -60,7 +62,9 @@ Las herramientas de Codex que todavia necesitan adaptación (`prompt-master`, `a
 
 Los archivos generados llevan una marca de administracion. Si encuentra un `CLAUDE.md` o `AGENTS.md` ajeno, cambios Git rastreados, un `origin` diferente, una carpeta real o un symlink que apunta a otra fuente, se detiene sin reemplazar ese elemento.
 
-El repositorio puede moverse a otra carpeta. `install.sh` conserva por defecto en `~/.local/state/setup-skills/managed-roots` las rutas que ha administrado y, al ejecutarse desde la nueva ubicacion, migra los symlinks de Claude y Codex sin tocar destinos ajenos. Las instalaciones anteriores a este registro tambien se reconocen cuando existen varios symlinks rotos y consistentes con la estructura de `setup-skills`.
+El repositorio puede moverse a otra carpeta. `install.sh` conserva por defecto en `~/.local/state/setup-ai-tools/managed-roots` las rutas que ha administrado y, al ejecutarse desde la nueva ubicacion, migra los symlinks de Claude y Codex sin tocar destinos ajenos. Las instalaciones anteriores a este registro tambien se reconocen cuando existen varios symlinks rotos y consistentes con la estructura del proyecto.
+
+Las instalaciones creadas cuando el proyecto se llamaba `setup-skills` se migran automaticamente: el instalador reconoce su marca y su estado en `~/.local/state/setup-skills`, y publica el estado actualizado bajo el nombre nuevo.
 
 Si ya existe una herramienta instalada por otra fuente, el instalador no la reemplaza ni detiene las herramientas restantes. Para Superpowers compara `origin`, commit y estado Git: reutiliza una instalacion externa identica; si difiere, la conserva, omite solo esa integracion y muestra el conflicto al final. La transferencia de administracion debe ser explicita:
 
@@ -69,7 +73,7 @@ Si ya existe una herramienta instalada por otra fuente, el instalador no la reem
 ./install.sh --platform codex --migrate-tool superpowers
 ```
 
-La migracion solo reemplaza symlinks; nunca elimina carpetas reales. La ruta, el origin y el commit anteriores quedan registrados en `~/.local/state/setup-skills/migrations.log` para facilitar una restauracion manual.
+La migracion solo reemplaza symlinks; nunca elimina carpetas reales. La ruta, el origin y el commit anteriores quedan registrados en `~/.local/state/setup-ai-tools/migrations.log` para facilitar una restauracion manual.
 
 Context7 funciona de inmediato en el tier anonimo; agregar una API key es opcional.
 

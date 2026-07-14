@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Herramienta de mantenimiento de los manifiestos de setup-skills.
+# Herramienta de mantenimiento de los manifiestos de setup-ai-tools.
 # No instala herramientas, no crea commits y nunca hace push.
 set -euo pipefail
 

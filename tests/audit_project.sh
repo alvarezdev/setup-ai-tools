@@ -56,7 +56,8 @@ esac
 rg -n 'claude-mem@\$CLAUDE_MEM_VERSION' install.sh >/dev/null
 pass "claude-mem fijado en tool-versions.env"
 
-rg -n 'git clone https://github.com/alvarezdev/setup-skills.git && cd setup-skills && ./install.sh' README.md >/dev/null
+rg -n 'git clone https://github.com/alvarezdev/setup-ai-tools.git && cd setup-ai-tools && ./install.sh' README.md >/dev/null
+rg -n 'LEGACY_GENERATED_MARKER|LEGACY_STATE_FILE|setup-skills-managed-roots-v1' install.sh >/dev/null
 rg -n 'CODEX_SKILLS_DST|codex mcp add context7' install.sh >/dev/null
 rg -n 'claude-mem@\$CLAUDE_MEM_VERSION.*start' install.sh >/dev/null
 pass "bootstrap sin opciones provisiona plataformas y arranca servicios"

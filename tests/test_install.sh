@@ -220,7 +220,7 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_DIFFERENT" \
   > "$TMP/superpowers-migrated.log"
 [ "$(readlink "$HOME_DIFFERENT/.claude/skills/using-superpowers")" = "$PROJECT/superpowers/skills/using-superpowers" ] \
   || fail "la migracion explicita no adopto Superpowers"
-MIGRATION_LOG="$HOME_DIFFERENT/.local/state/setup-skills/migrations.log"
+MIGRATION_LOG="$HOME_DIFFERENT/.local/state/setup-ai-tools/migrations.log"
 assert_file_contains "$MIGRATION_LOG" "previous_target=$EXTERNAL_DIFFERENT"
 assert_file_contains "$MIGRATION_LOG" "previous_commit=$NEWER_COMMIT"
 assert_file_contains "$MIGRATION_LOG" "new_target=$PROJECT/superpowers"
@@ -243,7 +243,7 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX_DIFFERENT" CODEX_HOME="$HOME_CODEX_DIFF
   > "$TMP/codex-superpowers-migrated.log"
 [ "$(readlink "$HOME_CODEX_DIFFERENT/.codex/skills/using-superpowers")" = "$PROJECT/superpowers/skills/using-superpowers" ] \
   || fail "Codex no migro Superpowers con autorizacion explicita"
-assert_file_contains "$HOME_CODEX_DIFFERENT/.local/state/setup-skills/migrations.log" "platform=codex"
+assert_file_contains "$HOME_CODEX_DIFFERENT/.local/state/setup-ai-tools/migrations.log" "platform=codex"
 
 echo "TEST: rechaza un repositorio con origin ajeno"
 HOME_FOUR="$TMP/home-four"
@@ -266,12 +266,29 @@ AFTER_HASH="$(shasum -a 256 "$HOME_FIVE/.claude/settings.json" | awk '{print $1}
 
 echo "TEST: migra una instalacion al mover el proyecto para Claude y Codex"
 OLD_PROJECT="$PROJECT"
-STATE_FILE="$HOME_AUTO/.local/state/setup-skills/managed-roots"
+STATE_DIR="$HOME_AUTO/.local/state/setup-ai-tools"
+STATE_FILE="$STATE_DIR/managed-roots"
 [ -f "$STATE_FILE" ] || fail "install no registro la ruta administrada"
-# Simula una instalacion creada antes de que existiera el registro de rutas.
-rm -f "$STATE_FILE"
+
+echo "TEST: importa el estado y el historial creados bajo setup-skills"
+LEGACY_STATE_DIR="$HOME_AUTO/.local/state/setup-skills"
+mkdir -p "$(dirname "$LEGACY_STATE_DIR")"
+mv "$STATE_DIR" "$LEGACY_STATE_DIR"
+{
+  printf '%s\n' 'setup-skills-managed-roots-v1'
+  tail -n +2 "$LEGACY_STATE_DIR/managed-roots"
+} > "$LEGACY_STATE_DIR/managed-roots.new"
+mv "$LEGACY_STATE_DIR/managed-roots.new" "$LEGACY_STATE_DIR/managed-roots"
+printf '%s\n' 'legacy-history=preserved' > "$LEGACY_STATE_DIR/migrations.log"
+
+HOME_DISCOVERY="$TMP/home-legacy-discovery"
+mkdir -p "$HOME_DISCOVERY/.claude/skills"
+ln -s "$OLD_PROJECT/skills/commit-style" "$HOME_DISCOVERY/.claude/skills/commit-style"
+ln -s "$OLD_PROJECT/superpowers/skills/using-superpowers" \
+  "$HOME_DISCOVERY/.claude/skills/using-superpowers"
+
 mkdir -p "$TMP/relocated"
-PROJECT="$TMP/relocated/setup-skills"
+PROJECT="$TMP/relocated/setup-ai-tools"
 mv "$OLD_PROJECT" "$PROJECT"
 
 PATH="$MOCK_BIN:$PATH" HOME="$HOME_AUTO" CODEX_HOME="$HOME_AUTO/.codex" \
@@ -282,13 +299,19 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_AUTO" CODEX_HOME="$HOME_AUTO/.codex" \
   || fail "la migracion de Claude altero Codex antes de seleccionarlo"
 assert_file_contains "$STATE_FILE" "$OLD_PROJECT"
 assert_file_contains "$STATE_FILE" "$PROJECT"
+assert_file_contains "$HOME_AUTO/.local/state/setup-ai-tools/migrations.log" "legacy-history=preserved"
+assert_file_contains "$TMP/install-relocated-claude.log" "Estado anterior importado desde: $LEGACY_STATE_DIR"
 
 PATH="$MOCK_BIN:$PATH" HOME="$HOME_AUTO" CODEX_HOME="$HOME_AUTO/.codex" \
   "$PROJECT/install.sh" --platform codex > "$TMP/install-relocated-codex.log"
 [ "$(readlink "$HOME_AUTO/.codex/skills/commit-style")" = "$PROJECT/skills/commit-style" ] \
   || fail "Codex no migro commit-style a la nueva ruta"
-assert_file_contains "$TMP/install-relocated-claude.log" "Instalacion anterior detectada en: $OLD_PROJECT"
 assert_file_contains "$TMP/install-relocated-codex.log" "MIG Codex/commit-style"
+
+run_install "$HOME_DISCOVERY" > "$TMP/install-legacy-discovery.log"
+[ "$(readlink "$HOME_DISCOVERY/.claude/skills/commit-style")" = "$PROJECT/skills/commit-style" ] \
+  || fail "no migro una instalacion sin archivo de estado"
+assert_file_contains "$TMP/install-legacy-discovery.log" "Instalacion anterior detectada en: $OLD_PROJECT"
 
 python3 - "$HOME_AUTO/.claude/settings.json" "$PROJECT/superpowers" <<'PY'
 import json

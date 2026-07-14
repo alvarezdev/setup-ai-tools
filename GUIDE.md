@@ -1,6 +1,6 @@
 # Guia de uso
 
-Como usar cada herramienta instalada en `setup-skills`. Para la ficha tecnica completa (rutas, version, alcance) ver `PROJECT_INSTRUCTIONS.md`.
+Como usar cada herramienta instalada en `setup-ai-tools`. Para la ficha tecnica completa (rutas, version, alcance) ver `PROJECT_INSTRUCTIONS.md`.
 
 ---
 
@@ -82,7 +82,7 @@ Meta-agente de diseno de software. Se activa entrando a su propio directorio con
 
 **Ejemplos:**
 ```bash
-cd setup-skills/the-architect
+cd setup-ai-tools/the-architect
 claude
 ```
 ```
