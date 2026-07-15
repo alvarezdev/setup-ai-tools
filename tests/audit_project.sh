@@ -21,6 +21,7 @@ bash -n verify-compatibility.sh
 bash -n tests/test_install.sh
 bash -n tests/test_compatibility.sh
 bash -n tests/test_codex_adapters.sh
+bash -n tests/test_graphify.sh
 bash -n tests/test_instructions.sh
 bash -n tests/test_manage.sh
 pass "sintaxis Bash"
@@ -124,6 +125,9 @@ pass "verificador extensible sin plataformas codificadas"
 
 ./tests/test_codex_adapters.sh
 pass "adaptadores Codex y manifiesto de compatibilidad"
+
+./tests/test_graphify.sh
+pass "Graphify fijado, seguro y documentado"
 
 ./tests/test_instructions.sh
 pass "instrucciones locales generadas por plataforma"

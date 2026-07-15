@@ -69,6 +69,31 @@ Como quedaria el commit de estos cambios que tengo sin commitear
 
 ---
 
+## Graphify
+
+Explora un codebase mediante su grafo antes de hacer una busqueda amplia. En
+este repo se instala como CLI global aislado con `uv` y una skill propia para
+Claude y Codex; no modifica las instrucciones ni hooks de las plataformas.
+
+**Ejemplos:**
+```bash
+graphify query "How does install.sh provision Claude and Codex?"
+graphify path "install.sh script" "ensure_skill_link()"
+graphify explain install.sh
+```
+
+Para crear o actualizar el grafo deliberadamente:
+```bash
+graphify .
+graphify update .
+```
+
+La skill `/graphify` está disponible en cada sesión nueva, pero el grafo no se
+reconstruye automáticamente. Si no existe o está desactualizado, se indica y
+se usa lectura directa o `rg`; `graphify-out/` permanece local e ignorado.
+
+---
+
 ## Context7 (MCP)
 
 Trae documentacion actualizada de librerias y frameworks directo al contexto, evitando que Claude invente APIs o use ejemplos de versiones viejas. Se activa automaticamente al detectar preguntas sobre librerias; tambien se puede invocar explicito.

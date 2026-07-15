@@ -18,7 +18,7 @@ case "$MODE" in
     ;;
 esac
 
-for command_name in git npm; do
+for command_name in git npm curl python3; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "ERROR: falta el comando requerido: $command_name" >&2
     exit 1
@@ -33,6 +33,7 @@ fi
 # shellcheck disable=SC1090
 . "$VERSIONS"
 : "${CLAUDE_MEM_VERSION:?Falta CLAUDE_MEM_VERSION en tool-versions.env}"
+: "${GRAPHIFY_VERSION:?Falta GRAPHIFY_VERSION en tool-versions.env}"
 
 remote_head() {
   local url="$1"
@@ -152,10 +153,19 @@ else
   echo "UPD claude-mem: $CLAUDE_MEM_VERSION -> $latest_claude_mem"
 fi
 
+echo "==> Paquetes PyPI"
+latest_graphify="$(curl -fsSL https://pypi.org/pypi/graphifyy/json | python3 -c 'import json, sys; print(json.load(sys.stdin)["info"]["version"])')"
+if [ "$GRAPHIFY_VERSION" = "$latest_graphify" ]; then
+  echo "OK  graphifyy ya esta actualizado ($GRAPHIFY_VERSION)"
+else
+  echo "UPD graphifyy: $GRAPHIFY_VERSION -> $latest_graphify"
+fi
+
 if [ "$MODE" = "apply" ]; then
   versions_tmp="$(mktemp "$BASE/.tool-versions.XXXXXX")"
-  awk -v version="$latest_claude_mem" '
-    /^CLAUDE_MEM_VERSION=/ { print "CLAUDE_MEM_VERSION=" version; next }
+  awk -v claude_mem_version="$latest_claude_mem" -v graphify_version="$latest_graphify" '
+    /^CLAUDE_MEM_VERSION=/ { print "CLAUDE_MEM_VERSION=" claude_mem_version; next }
+    /^GRAPHIFY_VERSION=/ { print "GRAPHIFY_VERSION=" graphify_version; next }
     { print }
   ' "$VERSIONS" > "$versions_tmp"
 

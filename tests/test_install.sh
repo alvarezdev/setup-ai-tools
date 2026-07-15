@@ -48,6 +48,7 @@ git clone -q "$ORIGIN" "$PROJECT/superpowers"
 
 mkdir -p \
   "$PROJECT/skills/commit-style" \
+  "$PROJECT/skills/graphify" \
   "$PROJECT/prompt-master" \
   "$PROJECT/abogado-del-diablo/skills/abogado-del-diablo" \
   "$PROJECT/adapters/codex/prompt-master" \
@@ -58,6 +59,7 @@ mkdir -p \
   "$PROJECT/the-architect" \
   "$PROJECT/claude-token-efficient"
 printf '%s\n' '# skill' > "$PROJECT/skills/commit-style/SKILL.md"
+printf '%s\n' '# graphify wrapper' > "$PROJECT/skills/graphify/SKILL.md"
 printf '%s\n' '# skill' > "$PROJECT/prompt-master/SKILL.md"
 printf '%s\n' '# skill' > "$PROJECT/abogado-del-diablo/skills/abogado-del-diablo/SKILL.md"
 printf '%s\n' '# adapter' > "$PROJECT/adapters/codex/prompt-master/SKILL.md"
@@ -93,7 +95,17 @@ printf '%s\n' \
   'printf "%s\n" "$*" >> "$MOCK_LOG"' \
   'exit 0' \
   > "$MOCK_BIN/npx"
-chmod +x "$MOCK_BIN/claude" "$MOCK_BIN/codex" "$MOCK_BIN/npx"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'printf "uv %s\n" "$*" >> "$MOCK_LOG"' \
+  'exit 0' \
+  > "$MOCK_BIN/uv"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'printf "graphify %s\n" "$*" >> "$MOCK_LOG"' \
+  'exit 0' \
+  > "$MOCK_BIN/graphify"
+chmod +x "$MOCK_BIN/claude" "$MOCK_BIN/codex" "$MOCK_BIN/npx" "$MOCK_BIN/uv" "$MOCK_BIN/graphify"
 export MOCK_LOG
 
 run_install() {
@@ -108,6 +120,13 @@ printf '%s\n' '{"hooks":{"SessionStart":[{"matcher":"startup"}]}}' > "$HOME_ONE/
 [ "$(git -C "$PROJECT/superpowers" rev-parse HEAD)" = "$NEWER_COMMIT" ] || fail "fixture no inicio desalineado"
 run_install "$HOME_ONE" > "$TMP/install-one.log"
 [ "$(git -C "$PROJECT/superpowers" rev-parse HEAD)" = "$PINNED_COMMIT" ] || fail "install no reconcilio el commit"
+[ -L "$HOME_ONE/.claude/skills/graphify" ] || fail "Claude no recibio Graphify"
+[ "$(readlink "$HOME_ONE/.claude/skills/graphify")" = "$PROJECT/skills/graphify" ] \
+  || fail "Claude no enlazo el wrapper propio de Graphify"
+assert_file_contains "$MOCK_LOG" "uv tool install --python 3.12 graphifyy==0.9.16"
+if grep -F 'graphify ' "$MOCK_LOG" >/dev/null; then
+  fail "install.sh invoco un instalador upstream de Graphify"
+fi
 
 echo "TEST: repara SessionStart incompleto sin perder el grupo existente"
 python3 - "$HOME_ONE/.claude/settings.json" "$PROJECT/superpowers" <<'PY'
@@ -154,6 +173,9 @@ mkdir -p "$HOME_CODEX"
 PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX" CODEX_HOME="$HOME_CODEX/.codex" \
   "$PROJECT/install.sh" --platform codex > "$TMP/install-codex.log"
 [ -L "$HOME_CODEX/.codex/skills/commit-style" ] || fail "Codex no recibio commit-style"
+[ -L "$HOME_CODEX/.codex/skills/graphify" ] || fail "Codex no recibio Graphify"
+[ "$(readlink "$HOME_CODEX/.codex/skills/graphify")" = "$PROJECT/skills/graphify" ] \
+  || fail "Codex no enlazo el wrapper propio de Graphify"
 [ -L "$HOME_CODEX/.codex/skills/using-superpowers" ] || fail "Codex no recibio superpowers"
 [ -L "$HOME_CODEX/.codex/skills/context7-mcp" ] || fail "Codex no recibio Context7"
 [ -L "$HOME_CODEX/.codex/skills/prompt-master" ] || fail "Codex no recibio prompt-master"

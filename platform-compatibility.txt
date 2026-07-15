@@ -8,6 +8,8 @@ abogado-del-diablo|claude|native|abogado-del-diablo/skills/abogado-del-diablo/SK
 abogado-del-diablo|codex|compatible|adapters/codex/abogado-del-diablo/SKILL.md|Adaptador propio para Codex con capacidades y subagentes traducidos
 commit-style|claude|compatible|skills/commit-style/SKILL.md|Formato SKILL.md compatible
 commit-style|codex|compatible|skills/commit-style/SKILL.md|Formato Agent Skills compatible
+graphify|claude|native|skills/graphify/SKILL.md|Wrapper propio compatible que invoca el CLI Graphify fijado
+graphify|codex|native|skills/graphify/SKILL.md|Wrapper propio compatible que invoca el CLI Graphify fijado
 context7|claude|native|context7/packages/mcp/package.json|MCP compatible con Claude Code
 context7|codex|native|context7/packages/mcp/package.json|MCP compatible con Codex
 the-architect|claude|native|the-architect/CLAUDE.md|Proyecto basado en CLAUDE.md

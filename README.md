@@ -22,7 +22,7 @@ Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copi
 
 ## Que contiene este repo
 
-- `skills/commit-style/` - skill propio (Conventional Commits desde el diff real)
+- `skills/commit-style/` y `skills/graphify/` - skills propios (Conventional Commits y exploracion de grafos)
 - `adapters/codex/` - adaptadores propios de skills y workspace exclusivos de Codex
 - `PROJECT_INSTRUCTIONS.md` - fuente generica de instrucciones e inventario
 - `third-party-repos.txt` - manifiesto de repos de terceros (URL + commit)
@@ -57,7 +57,7 @@ Para generar solamente los archivos de instrucciones, sin clonar ni instalar her
 2. Verifica las herramientas declaradas para todas las plataformas seleccionadas.
 3. Crea los repos ausentes y reconcilia los existentes contra su URL y version declaradas.
 4. Instala en Claude y Codex los skills compatibles, sin sobrescribir instalaciones ajenas.
-5. Instala claude-mem para cada plataforma, arranca su worker y registra Context7.
+5. Instala Graphify con `uv` y Python 3.12, publica su skill propia para ambas plataformas, instala claude-mem para cada plataforma, arranca su worker y registra Context7.
 
 En Codex, `prompt-master` y `abogado-del-diablo` se instalan como symlinks a
 `adapters/codex/`; los adaptadores conservan los repos upstream solo como
@@ -108,7 +108,7 @@ Las instalaciones normales permanecen reproducibles. Las actualizaciones se hace
 ./update.sh apply
 ```
 
-`check` compara los commits fijados y la version de claude-mem con upstream sin modificar archivos. `apply` actualiza los clones locales, valida que conserven sus archivos esenciales y guarda los nuevos commits `pinned` en `third-party-repos.txt` y la nueva version de claude-mem en `tool-versions.env`.
+`check` compara los commits fijados, la version de claude-mem y la version de Graphify en PyPI sin modificar archivos. `apply` actualiza los clones locales, valida que conserven sus archivos esenciales y guarda los nuevos commits `pinned` en `third-party-repos.txt` y las nuevas versiones de paquetes en `tool-versions.env`.
 
 Los repositorios `shallow` siguen intencionalmente el ultimo commit de su rama porque solo se conservan como referencia. Si un repositorio tiene cambios rastreados, `apply` se detiene antes de actualizar; los archivos no rastreados se conservan y Git evita sobrescribirlos si entran en conflicto.
 

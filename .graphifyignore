@@ -1,0 +1,16 @@
+# Repositorios terceros y fuentes duplicadas.
+superpowers/
+prompt-master/
+abogado-del-diablo/
+context7/
+claude-token-efficient/
+the-architect/
+
+# Instrucciones generadas y referencias internas de adaptadores.
+CLAUDE.md
+AGENTS.md
+adapters/codex/*/upstream
+
+# Metadatos y artefactos generados por Graphify.
+.git/
+graphify-out/

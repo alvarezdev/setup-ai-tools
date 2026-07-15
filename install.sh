@@ -413,6 +413,7 @@ if platform_is_selected claude || platform_is_selected codex; then
   # shellcheck disable=SC1090
   . "$VERSIONS"
   : "${CLAUDE_MEM_VERSION:?Falta CLAUDE_MEM_VERSION en tool-versions.env}"
+  : "${GRAPHIFY_VERSION:?Falta GRAPHIFY_VERSION en tool-versions.env}"
 fi
 
 verify_selected_platforms pre
@@ -930,6 +931,20 @@ fi
 
 verify_selected_platforms post
 
+# --- Graphify: solo CLI aislado; no usar sus instaladores de plataforma ---
+install_graphify_cli() {
+  echo "==> Instalando Graphify $GRAPHIFY_VERSION con uv y Python 3.12"
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "ERROR: uv no esta disponible; instalalo para provisionar Graphify" >&2
+    return 1
+  fi
+  uv tool install --python 3.12 "graphifyy==$GRAPHIFY_VERSION"
+}
+
+if platform_is_selected claude || platform_is_selected codex; then
+  install_graphify_cli
+fi
+
 if platform_is_selected claude; then
   prepare_superpowers_for_platform claude "$SKILLS_DST/using-superpowers"
 fi
@@ -944,6 +959,7 @@ mkdir -p "$SKILLS_DST"
 # macOS trae bash 3.2 (sin arrays asociativos), por eso usamos pares "name|target".
 SKILL_LINKS="
 commit-style|commit-style|$BASE/skills/commit-style
+graphify|graphify|$BASE/skills/graphify
 prompt-master|prompt-master|$BASE/prompt-master
 abogado-del-diablo|abogado-del-diablo|$BASE/abogado-del-diablo/skills/abogado-del-diablo
 superpowers|brainstorming|$SUPERPOWERS_CLAUDE_ROOT/skills/brainstorming
@@ -1077,6 +1093,7 @@ if platform_is_selected codex; then
   mkdir -p "$CODEX_SKILLS_DST"
   CODEX_SKILL_LINKS="
 commit-style|commit-style|$BASE/skills/commit-style
+graphify|graphify|$BASE/skills/graphify
 prompt-master|prompt-master|$BASE/adapters/codex/prompt-master
 abogado-del-diablo|abogado-del-diablo|$BASE/adapters/codex/abogado-del-diablo
 superpowers|brainstorming|$SUPERPOWERS_CODEX_ROOT/skills/brainstorming

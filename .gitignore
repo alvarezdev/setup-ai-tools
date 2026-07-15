@@ -7,6 +7,9 @@
 /claude-token-efficient/
 /the-architect/
 
+# Artefactos locales de Graphify.
+/graphify-out/
+
 # Archivos de instrucciones generados localmente desde PROJECT_INSTRUCTIONS.md.
 /CLAUDE.md
 /AGENTS.md
