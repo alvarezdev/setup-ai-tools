@@ -64,6 +64,10 @@ que una versión ya presente en los cachés de Claude o Codex. Antes de actualiz
 usa `./update.sh check` y después `./update.sh apply`; no reduzcas
 `CLAUDE_MEM_VERSION` manualmente.
 
+El procedimiento para diagnosticar y recuperar hooks bloqueados por
+`worker unreachable` está documentado en la sección de claude-mem de
+`GUIDE.md`.
+
 En Codex, `prompt-master` y `abogado-del-diablo` se instalan como symlinks a
 `adapters/codex/`; los adaptadores conservan los repos upstream solo como
 referencia. `the-architect` se usa desde el workspace

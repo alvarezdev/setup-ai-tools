@@ -166,6 +166,36 @@ actualizar usa primero `./update.sh check` y luego `./update.sh apply`.
 spawn knowledge-agent to find decisions about the database schema
 ```
 
+### Troubleshooting: `worker unreachable`
+
+Si un hook muestra `claude-mem worker unreachable for N consecutive hooks`,
+comprueba primero el worker sin borrar la memoria:
+
+```bash
+curl -fsS http://127.0.0.1:37701/api/health
+```
+
+Una respuesta sana debe mostrar la version esperada junto con
+`"initialized":true` y `"mcpReady":true`. En el incidente registrado en este
+proyecto, el instalador habia degradado claude-mem de 13.12.4 a 13.10.4 y el
+worker antiguo no pudo abrir el esquema mas nuevo de
+`~/.claude-mem/claude-mem.db`.
+
+Recuperacion recomendada para Claude:
+
+```bash
+./update.sh check
+./update.sh apply
+./install.sh --platform claude
+curl -fsS http://127.0.0.1:37701/api/health
+```
+
+Para Codex, sustituye la plataforma final por `--platform codex`. Si el worker
+sigue sin inicializar, revisa `~/.claude-mem/logs/` y compara la version del
+endpoint con `CLAUDE_MEM_VERSION` en `tool-versions.env`. No borres
+`~/.claude-mem/` como primera solucion: contiene la base de datos y el historial
+local.
+
 ---
 
 ## claude-token-efficient

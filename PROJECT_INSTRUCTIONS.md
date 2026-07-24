@@ -406,6 +406,7 @@ Privacidad: usa etiquetas `<private>` para excluir contenido del almacenamiento.
 Consideraciones:
 - El instalador arranca el worker automaticamente y falla de forma visible si no puede dejarlo funcionando.
 - El instalador rechaza un pin menor que una version ya presente en los caches de Claude o Codex; no reduzcas `CLAUDE_MEM_VERSION` manualmente. Ejecuta `./update.sh check` y luego `./update.sh apply` para avanzar la version de forma segura.
+- Si un hook informa `claude-mem worker unreachable for N consecutive hooks`, consulta `http://127.0.0.1:37701/api/health`: la version debe coincidir con el pin y mostrar `initialized: true` y `mcpReady: true`. Reinstala la plataforma despues de actualizar el pin y revisa `~/.claude-mem/logs/` si no inicializa. No borres `~/.claude-mem/` como primera solucion.
 - La memoria empieza a inyectarse a partir de la segunda sesion en un proyecto.
 - Panel web: `http://localhost:37701`
 - La memoria se acumula en `~/.claude-mem/` (local, no se sincroniza).
