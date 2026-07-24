@@ -425,6 +425,46 @@ normalize_git_url() {
   printf '%s\n' "${value%.git}"
 }
 
+is_plain_semver() {
+  awk -v version="$1" 'BEGIN { exit (version ~ /^[0-9]+\.[0-9]+\.[0-9]+$/ ? 0 : 1) }'
+}
+
+semver_is_greater() {
+  awk -v candidate="$1" -v reference="$2" '
+    BEGIN {
+      split(candidate, candidate_parts, ".")
+      split(reference, reference_parts, ".")
+      for (part_index = 1; part_index <= 3; part_index++) {
+        candidate_part = candidate_parts[part_index] + 0
+        reference_part = reference_parts[part_index] + 0
+        if (candidate_part > reference_part) exit 0
+        if (candidate_part < reference_part) exit 1
+      }
+      exit 1
+    }
+  '
+}
+
+highest_installed_claude_mem_version() {
+  local cache_root candidate version highest=""
+
+  for cache_root in \
+    "$HOME/.claude/plugins/cache/thedotmack/claude-mem" \
+    "$CODEX_HOME/plugins/cache/claude-mem-local/claude-mem"; do
+    [ -d "$cache_root" ] || continue
+    for candidate in "$cache_root"/*; do
+      [ -d "$candidate" ] || continue
+      version="${candidate##*/}"
+      is_plain_semver "$version" || continue
+      if [ -z "$highest" ] || semver_is_greater "$version" "$highest"; then
+        highest="$version"
+      fi
+    done
+  done
+
+  printf '%s\n' "$highest"
+}
+
 validate_repo_source() {
   local name="$1"
   local dest="$2"
@@ -1136,6 +1176,13 @@ fi
 # --- 4. claude-mem: integraciones seleccionadas + worker ----------------
 if platform_is_selected claude || platform_is_selected codex; then
   echo "==> Instalando claude-mem $CLAUDE_MEM_VERSION"
+  INSTALLED_CLAUDE_MEM_VERSION="$(highest_installed_claude_mem_version)"
+  if [ -n "$INSTALLED_CLAUDE_MEM_VERSION" ] \
+    && semver_is_greater "$INSTALLED_CLAUDE_MEM_VERSION" "$CLAUDE_MEM_VERSION"; then
+    echo "ERROR: claude-mem instalado ($INSTALLED_CLAUDE_MEM_VERSION) es mas nuevo que el pin ($CLAUDE_MEM_VERSION)." >&2
+    echo "No se degrada automaticamente para proteger ~/.claude-mem/claude-mem.db; actualiza el pin con ./update.sh apply." >&2
+    exit 1
+  fi
   if ! command -v npx >/dev/null 2>&1; then
     echo "ERROR: npx no esta disponible; instala Node.js y vuelve a ejecutar install.sh" >&2
     exit 1

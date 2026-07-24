@@ -168,9 +168,22 @@ commands = [
 ]
 assert len(commands) == 1
 PY
-assert_file_contains "$MOCK_LOG" "claude-mem@13.10.4 install"
-assert_file_contains "$MOCK_LOG" "claude-mem@13.10.4 install --ide claude-code"
-assert_file_contains "$MOCK_LOG" "claude-mem@13.10.4 start"
+assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 install"
+assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 install --ide claude-code"
+assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 start"
+
+echo "TEST: rechaza degradar claude-mem para preservar la base de memoria"
+HOME_CLAUDE_MEM_NEWER="$TMP/home-claude-mem-newer"
+mkdir -p "$HOME_CLAUDE_MEM_NEWER/.claude/plugins/cache/thedotmack/claude-mem/13.12.5"
+NPX_LINES_BEFORE="$(grep -c '^claude-mem@' "$MOCK_LOG" || true)"
+if run_install "$HOME_CLAUDE_MEM_NEWER" > "$TMP/claude-mem-downgrade.log" 2>&1; then
+  fail "install permitio degradar claude-mem"
+fi
+NPX_LINES_AFTER="$(grep -c '^claude-mem@' "$MOCK_LOG" || true)"
+[ "$NPX_LINES_BEFORE" = "$NPX_LINES_AFTER" ] \
+  || fail "install invoco npx antes de rechazar la degradacion de claude-mem"
+assert_file_contains "$TMP/claude-mem-downgrade.log" \
+  "claude-mem instalado (13.12.5) es mas nuevo que el pin (13.12.4)"
 
 echo "TEST: provisiona Codex sin configurar Claude"
 HOME_CODEX="$TMP/home-codex"
@@ -191,7 +204,7 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX" CODEX_HOME="$HOME_CODEX/.codex" \
 [ "$(readlink "$HOME_CODEX/.codex/skills/abogado-del-diablo")" = "$PROJECT/adapters/codex/abogado-del-diablo" ] \
   || fail "Codex no enlazo el adaptador abogado-del-diablo"
 [ ! -e "$HOME_CODEX/.claude/settings.json" ] || fail "instalar solo Codex modifico settings de Claude"
-assert_file_contains "$MOCK_LOG" "claude-mem@13.10.4 install --ide codex-cli"
+assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 install --ide codex-cli"
 
 echo "TEST: instala reglas claude-token-efficient en el AGENTS.md global de Codex"
 TOKEN_BEGIN='# >>> setup-ai-tools: claude-token-efficient >>>'

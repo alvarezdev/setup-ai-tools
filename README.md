@@ -59,6 +59,11 @@ Para generar solamente los archivos de instrucciones, sin clonar ni instalar her
 4. Instala en Claude y Codex los skills compatibles, sin sobrescribir instalaciones ajenas.
 5. Instala Graphify con `uv` y Python 3.12, publica sus skills propias para ambas plataformas, publica Cyber Neo solo para Claude, instala claude-mem para cada plataforma, arranca su worker y registra Context7.
 
+Para proteger la base de datos de claude-mem, el instalador rechaza un pin menor
+que una versión ya presente en los cachés de Claude o Codex. Antes de actualizar,
+usa `./update.sh check` y después `./update.sh apply`; no reduzcas
+`CLAUDE_MEM_VERSION` manualmente.
+
 En Codex, `prompt-master` y `abogado-del-diablo` se instalan como symlinks a
 `adapters/codex/`; los adaptadores conservan los repos upstream solo como
 referencia. `the-architect` se usa desde el workspace

@@ -154,6 +154,10 @@ Quiero construir una app SaaS de gestion de inventario para pymes
 
 Memoria persistente entre sesiones de Claude Code y Codex. Captura observaciones automaticamente y las inyecta como contexto en sesiones posteriores. `install.sh` instala las integraciones detectadas y deja el worker iniciado.
 
+Para evitar incompatibilidades con `~/.claude-mem/claude-mem.db`, no reduzcas
+`CLAUDE_MEM_VERSION` manualmente. El instalador bloquea esa degradacion; para
+actualizar usa primero `./update.sh check` y luego `./update.sh apply`.
+
 **Ejemplos:**
 ```
 /mem-search autenticacion

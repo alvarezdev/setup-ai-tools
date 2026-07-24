@@ -57,7 +57,7 @@ Sin opciones, el script selecciona todos los CLI registrados que encuentre en `P
 
 Limitaciones conocidas (no automatizadas todavia):
 - **Reglas globales personales**: no se sobrescriben. No son necesarias para usar este proyecto; pueden configurarse opcionalmente en el archivo global de cada plataforma.
-- **claude-mem**: sus archivos viven en `~/.claude/plugins/marketplaces/thedotmack/` (con `node_modules` propios), no dentro de este repo. `install.sh` instala la version declarada en `tool-versions.env`; `update.sh apply` es el unico flujo que la avanza automaticamente.
+- **claude-mem**: sus archivos viven en `~/.claude/plugins/marketplaces/thedotmack/` (con `node_modules` propios), no dentro de este repo. `install.sh` instala la version declarada en `tool-versions.env` y bloquea una degradacion frente a una version ya presente, porque podria ser incompatible con `~/.claude-mem/claude-mem.db`. `update.sh apply` es el unico flujo que la avanza automaticamente.
 - **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex. El aviso `could not create PATH aliases` al ejecutar `codex` dentro de un sandbox restringido no corresponde al MCP: se verifica desde una Terminal normal, sin filtrar `stderr` ni mover `CODEX_HOME` a `/tmp`.
 - **`the-architect`**: repo autocontenido para Claude en `the-architect/` y workspace adaptado para Codex en `adapters/codex/the-architect/`. No requiere symlink de skill, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
 - **Graphify**: el CLI y la skill quedan disponibles globalmente, pero el grafo no se crea ni se actualiza al abrir una sesion. Genera o actualiza el grafo bajo demanda; `graphify-out/` es local e ignorado. No se ejecutan los instaladores upstream `graphify install`, `graphify claude install` ni `graphify codex install`, porque escriben instrucciones y hooks con rutas absolutas y romperian esta fuente unica.
@@ -405,6 +405,7 @@ Privacidad: usa etiquetas `<private>` para excluir contenido del almacenamiento.
 
 Consideraciones:
 - El instalador arranca el worker automaticamente y falla de forma visible si no puede dejarlo funcionando.
+- El instalador rechaza un pin menor que una version ya presente en los caches de Claude o Codex; no reduzcas `CLAUDE_MEM_VERSION` manualmente. Ejecuta `./update.sh check` y luego `./update.sh apply` para avanzar la version de forma segura.
 - La memoria empieza a inyectarse a partir de la segunda sesion en un proyecto.
 - Panel web: `http://localhost:37701`
 - La memoria se acumula en `~/.claude-mem/` (local, no se sincroniza).
