@@ -10,6 +10,7 @@ commit-style|claude|compatible|skills/commit-style/SKILL.md|Formato SKILL.md com
 commit-style|codex|compatible|skills/commit-style/SKILL.md|Formato Agent Skills compatible
 graphify|claude|native|skills/graphify/SKILL.md|Wrapper propio compatible que invoca el CLI Graphify fijado
 graphify|codex|native|skills/graphify/SKILL.md|Wrapper propio compatible que invoca el CLI Graphify fijado
+cyber-neo|claude|native|skills/cyber-neo/SKILL.md|Wrapper propio que conserva el upstream y redirige solo el reporte
 context7|claude|native|context7/packages/mcp/package.json|MCP compatible con Claude Code
 context7|codex|native|context7/packages/mcp/package.json|MCP compatible con Codex
 the-architect|claude|native|the-architect/CLAUDE.md|Proyecto basado en CLAUDE.md

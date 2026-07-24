@@ -9,5 +9,6 @@ superpowers|https://github.com/obra/superpowers.git|main|d884ae04edebef577e82ff7
 prompt-master|https://github.com/nidhinjs/prompt-master.git|main|d15eabbe5d2122eedc060bae8a771381e9873d1b|pinned
 abogado-del-diablo|https://github.com/Hainrixz/abogado-del-diablo.git|main|7ba9a5fbca612531e7871ac41a71b410a03af76f|pinned
 the-architect|https://github.com/Hainrixz/the-architect.git|main|a5eeec9c4872975dceb48b5ecfe7b39280470f61|pinned
+cyber-neo|https://github.com/Hainrixz/cyber-neo.git|main|dcac0a8f111954e543e1e66e02a222c0c489ca74|pinned
 context7|https://github.com/upstash/context7.git|master|-|shallow
 claude-token-efficient|https://github.com/drona23/claude-token-efficient.git|main|-|shallow

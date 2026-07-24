@@ -94,6 +94,24 @@ se usa lectura directa o `rg`; `graphify-out/` permanece local e ignorado.
 
 ---
 
+## Cyber Neo (Claude)
+
+Audita un proyecto en modo solo lectura mediante `/cyber-neo`. El upstream se
+mantiene intacto y el wrapper de este repo guarda el informe en
+`~/Documents/reports-cyber-neo/`, creando esa carpeta solo al finalizar el
+análisis.
+
+**Ejemplo:**
+```text
+/cyber-neo /ruta/al/proyecto
+```
+
+No modifica, borra ni ejecuta el proyecto auditado, ni instala escáneres
+opcionales. Su uso está publicado únicamente en Claude; Codex no recibe esta
+skill. El resultado es un archivo Markdown priorizado en la carpeta indicada.
+
+---
+
 ## Context7 (MCP)
 
 Trae documentacion actualizada de librerias y frameworks directo al contexto, evitando que Claude invente APIs o use ejemplos de versiones viejas. Se activa automaticamente al detectar preguntas sobre librerias; tambien se puede invocar explicito.

@@ -25,10 +25,10 @@ No omitas este paso aunque la instalacion haya sido simple.
 
 Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-ai-tools` en una maquina nueva, correr un script, y quedar configurado.
 
-Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `skills/graphify/`, `adapters/codex/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
+Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `skills/graphify/`, `skills/cyber-neo/`, `adapters/codex/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
 Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
-- `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect.
+- `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect y cyber-neo.
 - `shallow` - `git clone --depth 1` del tip de la rama, sin fijar commit. Usado por context7 y claude-token-efficient (solo referencia; su version exacta no importa y evita traer los 45MB de historial de context7).
 - `tool-versions.env` fija paquetes que no se instalan desde repos Git: claude-mem y Graphify.
 - `./update.sh check` consulta actualizaciones sin modificar archivos; `./update.sh apply` actualiza, valida y guarda los nuevos commits y versiones, incluida la version de Graphify en PyPI.
@@ -37,7 +37,7 @@ Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 Como funciona:
 - `PROJECT_INSTRUCTIONS.md` es la unica fuente versionada de instrucciones del proyecto. `platforms.txt` declara el nombre local que usa cada plataforma y `install.sh` genera los archivos administrados correspondientes. Con Claude y Codex seleccionados conviven `CLAUDE.md` y `AGENTS.md` con el mismo contenido.
 - Los skills instalados en `~/.claude/skills/` y `$CODEX_HOME/skills/` **son symlinks**, no copias. El contenido real vive dentro de este repo o de un repo clonado. Los adaptadores propios de Codex viven en `adapters/codex/` y contienen symlinks relativos a su fuente upstream para no modificarla.
-- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, incluidos los adaptadores de `prompt-master` y `abogado-del-diablo`; configura claude-mem con hooks nativos, registra Context7 y actualiza el bloque administrado de `claude-token-efficient` en `$CODEX_HOME/AGENTS.md`. Para ambas instala el CLI Graphify fijado con `uv` y Python 3.12 y publica el wrapper propio como symlink. Los destinos ajenos nunca se reemplazan.
+- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7; tambien publica el wrapper propio de Cyber Neo. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, incluidos los adaptadores de `prompt-master` y `abogado-del-diablo`; configura claude-mem con hooks nativos, registra Context7 y actualiza el bloque administrado de `claude-token-efficient` en `$CODEX_HOME/AGENTS.md`. Para ambas instala el CLI Graphify fijado con `uv` y Python 3.12 y publica el wrapper propio como symlink. Los destinos ajenos nunca se reemplazan.
 - `update.sh` resuelve el ultimo commit de cada rama, la ultima version npm de claude-mem y la ultima version de Graphify en PyPI. En modo `apply`, actualiza los clones, valida sus archivos esenciales y persiste las nuevas versiones para que instalaciones posteriores sigan siendo reproducibles.
 - `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
 - `manage.sh validate` comprueba la estructura y consistencia cruzada de todos los manifiestos; `manage.sh audit` agrega la suite completa de regresion. Una herramienta nueva que requiera hooks o comandos propios tambien debe incorporar su provisionamiento en `install.sh` y sus pruebas.
@@ -61,6 +61,7 @@ Limitaciones conocidas (no automatizadas todavia):
 - **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex. El aviso `could not create PATH aliases` al ejecutar `codex` dentro de un sandbox restringido no corresponde al MCP: se verifica desde una Terminal normal, sin filtrar `stderr` ni mover `CODEX_HOME` a `/tmp`.
 - **`the-architect`**: repo autocontenido para Claude en `the-architect/` y workspace adaptado para Codex en `adapters/codex/the-architect/`. No requiere symlink de skill, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
 - **Graphify**: el CLI y la skill quedan disponibles globalmente, pero el grafo no se crea ni se actualiza al abrir una sesion. Genera o actualiza el grafo bajo demanda; `graphify-out/` es local e ignorado. No se ejecutan los instaladores upstream `graphify install`, `graphify claude install` ni `graphify codex install`, porque escriben instrucciones y hooks con rutas absolutas y romperian esta fuente unica.
+- **Cyber Neo**: se publica solo para Claude; su upstream no se modifica. El wrapper propio crea `~/Documents/reports-cyber-neo/` solo al guardar el informe y nunca escribe dentro del proyecto auditado.
 
 ### Regla Graphify
 
@@ -216,6 +217,28 @@ Consideraciones:
 - `.graphifyignore` excluye terceros, instrucciones generadas, metadatos Git y salidas locales. `graphify-out/` no se versiona.
 - No ejecutes los instaladores upstream de Graphify en este repo: modifican `CLAUDE.md`, `AGENTS.md` y hooks con rutas absolutas. El wrapper propio preserva `PROJECT_INSTRUCTIONS.md` como fuente unica.
 - `update.sh check|apply` consulta PyPI y actualiza la version fijada de `graphifyy` junto con claude-mem.
+
+---
+
+### Cyber Neo
+- Repositorio: https://github.com/Hainrixz/cyber-neo
+- Instalado en Claude: `~/.claude/skills/cyber-neo` (symlink) -> `setup-ai-tools/skills/cyber-neo/`; el upstream fijado se clona en `setup-ai-tools/cyber-neo/`
+- Alcance: global en Claude; sin soporte publicado para Codex
+- Version: commit fijado en `third-party-repos.txt`
+
+Skill de auditoria de ciberseguridad en modo solo lectura. Revisa SAST, autenticacion, criptografia, secretos, dependencias, seguridad web, supply chain, CI/CD, contenedores, errores y logging, y organiza los hallazgos por severidad, CWE y OWASP.
+
+Como invocarlo:
+```text
+/cyber-neo /ruta/al/proyecto
+```
+
+El wrapper carga el runbook y scripts del upstream intacto, no instala escaneres opcionales y mantiene la prohibicion de modificar, borrar o ejecutar el proyecto auditado. Solo al finalizar crea, si hace falta, `~/Documents/reports-cyber-neo/` y escribe un informe Markdown con el nombre `cyber-neo-report-{proyecto}-{fecha}.md`.
+
+Consideraciones:
+- Solo se habilito para Claude porque el upstream usa tools y variables propias de Claude Code; Codex no recibe symlink ni declaracion de compatibilidad.
+- Semgrep, Trivy, Gitleaks, `npm audit`, `pip-audit` y `cargo-audit` son opcionales; no se instalan ni se ejecutan por el provisionamiento.
+- El informe puede contener rutas y evidencia de seguridad, pero debe mantener secretos redactados como exige el upstream.
 
 ---
 

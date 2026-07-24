@@ -22,6 +22,7 @@ bash -n tests/test_install.sh
 bash -n tests/test_compatibility.sh
 bash -n tests/test_codex_adapters.sh
 bash -n tests/test_graphify.sh
+bash -n tests/test_cyber_neo.sh
 bash -n tests/test_instructions.sh
 bash -n tests/test_manage.sh
 pass "sintaxis Bash"
@@ -128,6 +129,9 @@ pass "adaptadores Codex y manifiesto de compatibilidad"
 
 ./tests/test_graphify.sh
 pass "Graphify fijado, seguro y documentado"
+
+./tests/test_cyber_neo.sh
+pass "Cyber Neo fijado, aislado y documentado para Claude"
 
 ./tests/test_instructions.sh
 pass "instrucciones locales generadas por plataforma"

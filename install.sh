@@ -960,6 +960,7 @@ mkdir -p "$SKILLS_DST"
 SKILL_LINKS="
 commit-style|commit-style|$BASE/skills/commit-style
 graphify|graphify|$BASE/skills/graphify
+cyber-neo|cyber-neo|$BASE/skills/cyber-neo
 prompt-master|prompt-master|$BASE/prompt-master
 abogado-del-diablo|abogado-del-diablo|$BASE/abogado-del-diablo/skills/abogado-del-diablo
 superpowers|brainstorming|$SUPERPOWERS_CLAUDE_ROOT/skills/brainstorming
@@ -1196,7 +1197,7 @@ cat <<'EOF'
 
 ==> Nota de versiones (importante en una maquina nueva):
   - Repos 'pinned' (superpowers, prompt-master, abogado-del-diablo,
-    the-architect): quedan en el commit exacto fijado en third-party-repos.txt.
+    the-architect, cyber-neo): quedan en el commit exacto fijado en third-party-repos.txt.
     Reproducibles: la maquina nueva tiene la misma version que la anterior.
   - Repos 'shallow' (context7, claude-token-efficient): traen el ULTIMO estado
     de la rama al momento de correr este script, NO una version fija. Si el

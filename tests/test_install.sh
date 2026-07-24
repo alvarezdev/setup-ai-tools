@@ -49,6 +49,7 @@ git clone -q "$ORIGIN" "$PROJECT/superpowers"
 mkdir -p \
   "$PROJECT/skills/commit-style" \
   "$PROJECT/skills/graphify" \
+  "$PROJECT/skills/cyber-neo" \
   "$PROJECT/prompt-master" \
   "$PROJECT/abogado-del-diablo/skills/abogado-del-diablo" \
   "$PROJECT/adapters/codex/prompt-master" \
@@ -60,6 +61,7 @@ mkdir -p \
   "$PROJECT/claude-token-efficient"
 printf '%s\n' '# skill' > "$PROJECT/skills/commit-style/SKILL.md"
 printf '%s\n' '# graphify wrapper' > "$PROJECT/skills/graphify/SKILL.md"
+printf '%s\n' '# cyber neo wrapper' > "$PROJECT/skills/cyber-neo/SKILL.md"
 printf '%s\n' '# skill' > "$PROJECT/prompt-master/SKILL.md"
 printf '%s\n' '# skill' > "$PROJECT/abogado-del-diablo/skills/abogado-del-diablo/SKILL.md"
 printf '%s\n' '# adapter' > "$PROJECT/adapters/codex/prompt-master/SKILL.md"
@@ -123,6 +125,9 @@ run_install "$HOME_ONE" > "$TMP/install-one.log"
 [ -L "$HOME_ONE/.claude/skills/graphify" ] || fail "Claude no recibio Graphify"
 [ "$(readlink "$HOME_ONE/.claude/skills/graphify")" = "$PROJECT/skills/graphify" ] \
   || fail "Claude no enlazo el wrapper propio de Graphify"
+[ -L "$HOME_ONE/.claude/skills/cyber-neo" ] || fail "Claude no recibio Cyber Neo"
+[ "$(readlink "$HOME_ONE/.claude/skills/cyber-neo")" = "$PROJECT/skills/cyber-neo" ] \
+  || fail "Claude no enlazo el wrapper propio de Cyber Neo"
 assert_file_contains "$MOCK_LOG" "uv tool install --python 3.12 graphifyy==0.9.16"
 if grep -F 'graphify ' "$MOCK_LOG" >/dev/null; then
   fail "install.sh invoco un instalador upstream de Graphify"
@@ -176,6 +181,7 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX" CODEX_HOME="$HOME_CODEX/.codex" \
 [ -L "$HOME_CODEX/.codex/skills/graphify" ] || fail "Codex no recibio Graphify"
 [ "$(readlink "$HOME_CODEX/.codex/skills/graphify")" = "$PROJECT/skills/graphify" ] \
   || fail "Codex no enlazo el wrapper propio de Graphify"
+[ ! -e "$HOME_CODEX/.codex/skills/cyber-neo" ] || fail "Codex recibio Cyber Neo sin soporte declarado"
 [ -L "$HOME_CODEX/.codex/skills/using-superpowers" ] || fail "Codex no recibio superpowers"
 [ -L "$HOME_CODEX/.codex/skills/context7-mcp" ] || fail "Codex no recibio Context7"
 [ -L "$HOME_CODEX/.codex/skills/prompt-master" ] || fail "Codex no recibio prompt-master"

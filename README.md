@@ -22,7 +22,7 @@ Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copi
 
 ## Que contiene este repo
 
-- `skills/commit-style/` y `skills/graphify/` - skills propios (Conventional Commits y exploracion de grafos)
+- `skills/commit-style/`, `skills/graphify/` y `skills/cyber-neo/` - skills propios (Conventional Commits, exploracion de grafos y wrapper seguro de Cyber Neo)
 - `adapters/codex/` - adaptadores propios de skills y workspace exclusivos de Codex
 - `PROJECT_INSTRUCTIONS.md` - fuente generica de instrucciones e inventario
 - `third-party-repos.txt` - manifiesto de repos de terceros (URL + commit)
@@ -57,7 +57,7 @@ Para generar solamente los archivos de instrucciones, sin clonar ni instalar her
 2. Verifica las herramientas declaradas para todas las plataformas seleccionadas.
 3. Crea los repos ausentes y reconcilia los existentes contra su URL y version declaradas.
 4. Instala en Claude y Codex los skills compatibles, sin sobrescribir instalaciones ajenas.
-5. Instala Graphify con `uv` y Python 3.12, publica su skill propia para ambas plataformas, instala claude-mem para cada plataforma, arranca su worker y registra Context7.
+5. Instala Graphify con `uv` y Python 3.12, publica sus skills propias para ambas plataformas, publica Cyber Neo solo para Claude, instala claude-mem para cada plataforma, arranca su worker y registra Context7.
 
 En Codex, `prompt-master` y `abogado-del-diablo` se instalan como symlinks a
 `adapters/codex/`; los adaptadores conservan los repos upstream solo como
@@ -90,11 +90,11 @@ a `/tmp` para silenciar ese aviso.
 
 ## Terceros
 
-Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, context7, claude-token-efficient, the-architect) son repos independientes con licencia MIT, propiedad de sus autores. Aqui solo se referencian por URL; su codigo no forma parte de este repo. Ver `third-party-repos.txt` y la seccion correspondiente en `PROJECT_INSTRUCTIONS.md`.
+Los proyectos referenciados (superpowers, prompt-master, abogado-del-diablo, cyber-neo, context7, claude-token-efficient, the-architect) son repos independientes con licencia MIT, propiedad de sus autores. Aqui solo se referencian por URL; su codigo no forma parte de este repo. Ver `third-party-repos.txt` y la seccion correspondiente en `PROJECT_INSTRUCTIONS.md`.
 
 ## Versiones al clonar en una maquina nueva
 
-- `pinned` (superpowers, prompt-master, abogado-del-diablo, the-architect): la maquina nueva queda en el mismo commit que la anterior. Reproducible.
+- `pinned` (superpowers, prompt-master, abogado-del-diablo, the-architect, cyber-neo): la maquina nueva queda en el mismo commit que la anterior. Reproducible.
 - `shallow` (context7, claude-token-efficient): traen el ultimo estado de la rama al momento de correr `install.sh`, NO una version fija. Es intencional porque son solo referencia (el MCP de Context7 corre remoto y las reglas de token-efficient se publican en Claude y Codex). Si el autor upstream las cambia, recibiras la version nueva.
 
 Para fijar uno de los `shallow`: en `third-party-repos.txt` cambia su modo a `pinned` y pon un commit; borra su carpeta y vuelve a correr `install.sh`.
