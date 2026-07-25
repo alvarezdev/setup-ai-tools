@@ -647,55 +647,58 @@ ensure_skill_link() {
   echo "OK  $label -> $target"
 }
 
-install_codex_token_efficient() {
-  local source="$1"
-  local agents="$CODEX_HOME/AGENTS.md"
-  local override="$CODEX_HOME/AGENTS.override.md"
+install_managed_instruction_block() {
+  local platform="$1"
+  local feature="$2"
+  local destination="$3"
+  local source="$4"
+  local override="${5:-}"
   local status
-  local marker_begin='# >>> setup-ai-tools: claude-token-efficient >>>'
-  local marker_end='# <<< setup-ai-tools: claude-token-efficient <<<'
+  local marker_begin="# >>> setup-ai-tools: $feature >>>"
+  local marker_end="# <<< setup-ai-tools: $feature <<<"
 
   if [ ! -f "$source" ]; then
-    echo "ERROR: falta la fuente de claude-token-efficient: $source" >&2
+    echo "ERROR: falta la fuente de $feature: $source" >&2
     return 1
   fi
 
-  if [ -f "$override" ] && [ -s "$override" ]; then
-    add_install_conflict "codex/claude-token-efficient: AGENTS.override.md no vacio puede ocultar $agents"
-    echo "AVISO: $override no vacio puede impedir que Codex lea $agents" >&2
+  if [ -n "$override" ] && [ -f "$override" ] && [ -s "$override" ]; then
+    add_install_conflict "$platform/$feature: $(basename "$override") no vacio puede ocultar $destination"
+    echo "AVISO: $override no vacio puede impedir que $platform lea $destination" >&2
   fi
 
-  if [ -L "$agents" ]; then
-    add_install_conflict "codex/claude-token-efficient: AGENTS.md es un symlink; se conserva"
-    echo "AVISO: $agents es un symlink; se conserva y se omite claude-token-efficient" >&2
+  if [ -L "$destination" ]; then
+    add_install_conflict "$platform/$feature: $(basename "$destination") es un symlink; se conserva"
+    echo "AVISO: $destination es un symlink; se conserva y se omite $feature" >&2
     return 0
   fi
-  if [ -e "$agents" ] && [ ! -f "$agents" ]; then
-    add_install_conflict "codex/claude-token-efficient: AGENTS.md existe y no es un archivo regular; se conserva"
-    echo "AVISO: $agents existe y no es un archivo regular; se conserva y se omite claude-token-efficient" >&2
+  if [ -e "$destination" ] && [ ! -f "$destination" ]; then
+    add_install_conflict "$platform/$feature: $(basename "$destination") existe y no es un archivo regular; se conserva"
+    echo "AVISO: $destination existe y no es un archivo regular; se conserva y se omite $feature" >&2
     return 0
   fi
 
-  if python3 - "$agents" "$source" "$marker_begin" "$marker_end" <<'PYEOF'
+  if python3 - "$destination" "$source" "$marker_begin" "$marker_end" "$feature" <<'PYEOF'
 import os
+import re
 import stat
 import sys
 import tempfile
 
-agents_path, source_path, begin, end = sys.argv[1:]
+destination_path, source_path, begin, end, feature = sys.argv[1:]
 
 with open(source_path, encoding="utf-8") as f:
     source = f.read()
 
 if begin in source or end in source:
     print(
-        "ERROR: la fuente de claude-token-efficient contiene marcadores administrados",
+        f"ERROR: la fuente de {feature} contiene marcadores administrados",
         file=sys.stderr,
     )
     raise SystemExit(4)
 
-if os.path.exists(agents_path):
-    with open(agents_path, encoding="utf-8") as f:
+if os.path.exists(destination_path):
+    with open(destination_path, encoding="utf-8") as f:
         current = f.read()
 else:
     current = ""
@@ -714,9 +717,35 @@ has_marker_variant = any(
     line.startswith(end) and line != end for line in line_contents
 )
 
-if has_marker_variant:
+managed_begin = re.compile(r"^# >>> setup-ai-tools: ([A-Za-z0-9._-]+) >>>$")
+managed_end = re.compile(r"^# <<< setup-ai-tools: ([A-Za-z0-9._-]+) <<<$")
+active = None
+all_markers_valid = True
+for line in line_contents:
+    begin_match = managed_begin.fullmatch(line)
+    end_match = managed_end.fullmatch(line)
+    if line.startswith("# >>> setup-ai-tools:") and begin_match is None:
+        all_markers_valid = False
+        break
+    if line.startswith("# <<< setup-ai-tools:") and end_match is None:
+        all_markers_valid = False
+        break
+    if begin_match:
+        if active is not None:
+            all_markers_valid = False
+            break
+        active = begin_match.group(1)
+    elif end_match:
+        if active != end_match.group(1):
+            all_markers_valid = False
+            break
+        active = None
+if active is not None:
+    all_markers_valid = False
+
+if has_marker_variant or not all_markers_valid:
     print(
-        f"AVISO: {agents_path} contiene marcadores administrados corruptos; se conserva",
+        f"AVISO: {destination_path} contiene marcadores administrados corruptos; se conserva",
         file=sys.stderr,
     )
     raise SystemExit(3)
@@ -737,22 +766,22 @@ elif len(begin_indexes) == 1 and len(end_indexes) == 1 and begin_indexes[0] < en
     updated += "".join(lines[end_indexes[0] + 1:])
 else:
     print(
-        f"AVISO: {agents_path} contiene marcadores administrados corruptos; se conserva",
+        f"AVISO: {destination_path} contiene marcadores administrados corruptos; se conserva",
         file=sys.stderr,
     )
     raise SystemExit(3)
 
-directory = os.path.dirname(agents_path)
+directory = os.path.dirname(destination_path)
 os.makedirs(directory, exist_ok=True)
-fd, temporary = tempfile.mkstemp(prefix=".agents.", suffix=".md", dir=directory)
+fd, temporary = tempfile.mkstemp(prefix=".instructions.", suffix=".md", dir=directory)
 try:
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(updated)
         f.flush()
         os.fsync(f.fileno())
-    if os.path.exists(agents_path):
-        os.chmod(temporary, stat.S_IMODE(os.stat(agents_path).st_mode))
-    os.replace(temporary, agents_path)
+    if os.path.exists(destination_path):
+        os.chmod(temporary, stat.S_IMODE(os.stat(destination_path).st_mode))
+    os.replace(temporary, destination_path)
 except Exception:
     try:
         os.unlink(temporary)
@@ -761,14 +790,14 @@ except Exception:
     raise
 PYEOF
   then
-    echo "OK  claude-token-efficient actualizado en $agents"
+    echo "OK  $feature actualizado en $destination"
     return 0
   else
     status=$?
   fi
 
   if [ "$status" -eq 3 ]; then
-    add_install_conflict "codex/claude-token-efficient: marcadores administrados corruptos en AGENTS.md; se conserva"
+    add_install_conflict "$platform/$feature: marcadores administrados corruptos en $(basename "$destination"); se conserva"
     return 0
   fi
   return "$status"
@@ -996,6 +1025,12 @@ fi
 if platform_is_selected claude; then
 mkdir -p "$SKILLS_DST"
 
+install_managed_instruction_block \
+  claude \
+  claude-mem-selective-recall \
+  "$HOME/.claude/CLAUDE.md" \
+  "$BASE/rules/claude-mem-selective-recall.md"
+
 # macOS trae bash 3.2 (sin arrays asociativos), por eso usamos pares "name|target".
 SKILL_LINKS="
 commit-style|commit-style|$BASE/skills/commit-style
@@ -1170,7 +1205,18 @@ context7|context7-mcp|$BASE/context7/plugins/codex/context7/skills/context7-mcp
 $CODEX_SKILL_LINKS
 EOF
 
-  install_codex_token_efficient "$BASE/claude-token-efficient/CLAUDE.md"
+  install_managed_instruction_block \
+    codex \
+    claude-token-efficient \
+    "$CODEX_HOME/AGENTS.md" \
+    "$BASE/claude-token-efficient/CLAUDE.md" \
+    "$CODEX_HOME/AGENTS.override.md"
+  install_managed_instruction_block \
+    codex \
+    claude-mem-selective-recall \
+    "$CODEX_HOME/AGENTS.md" \
+    "$BASE/rules/claude-mem-selective-recall.md" \
+    "$CODEX_HOME/AGENTS.override.md"
 fi
 
 # --- 4. claude-mem: integraciones seleccionadas + worker ----------------

@@ -25,7 +25,7 @@ No omitas este paso aunque la instalacion haya sido simple.
 
 Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maquinas. El objetivo: clonar `setup-ai-tools` en una maquina nueva, correr un script, y quedar configurado.
 
-Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `skills/graphify/`, `skills/cyber-neo/`, `adapters/codex/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
+Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `skills/graphify/`, `skills/cyber-neo/`, `rules/`, `adapters/codex/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
 Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 - `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect y cyber-neo.
@@ -37,7 +37,7 @@ Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 Como funciona:
 - `PROJECT_INSTRUCTIONS.md` es la unica fuente versionada de instrucciones del proyecto. `platforms.txt` declara el nombre local que usa cada plataforma y `install.sh` genera los archivos administrados correspondientes. Con Claude y Codex seleccionados conviven `CLAUDE.md` y `AGENTS.md` con el mismo contenido.
 - Los skills instalados en `~/.claude/skills/` y `$CODEX_HOME/skills/` **son symlinks**, no copias. El contenido real vive dentro de este repo o de un repo clonado. Los adaptadores propios de Codex viven en `adapters/codex/` y contienen symlinks relativos a su fuente upstream para no modificarla.
-- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7; tambien publica el wrapper propio de Cyber Neo. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, incluidos los adaptadores de `prompt-master` y `abogado-del-diablo`; configura claude-mem con hooks nativos, registra Context7 y actualiza el bloque administrado de `claude-token-efficient` en `$CODEX_HOME/AGENTS.md`. Para ambas instala el CLI Graphify fijado con `uv` y Python 3.12 y publica el wrapper propio como symlink. Los destinos ajenos nunca se reemplazan.
+- `install.sh` autodetecta una o varias plataformas, genera sus archivos de instrucciones, verifica compatibilidad y provisiona lo soportado. Para Claude administra skills, settings, hooks, claude-mem y Context7; tambien publica el wrapper propio de Cyber Neo. Para Codex instala skills compatibles en `$CODEX_HOME/skills`, incluidos los adaptadores de `prompt-master` y `abogado-del-diablo`; configura claude-mem con hooks nativos, registra Context7 y actualiza el bloque administrado de `claude-token-efficient` en `$CODEX_HOME/AGENTS.md`. Para ambas publica la regla selectiva de memoria desde `rules/claude-mem-selective-recall.md`, instala el CLI Graphify fijado con `uv` y Python 3.12 y publica el wrapper propio como symlink. Los destinos ajenos nunca se reemplazan.
 - `update.sh` resuelve el ultimo commit de cada rama, la ultima version npm de claude-mem y la ultima version de Graphify en PyPI. En modo `apply`, actualiza los clones, valida sus archivos esenciales y persiste las nuevas versiones para que instalaciones posteriores sigan siendo reproducibles.
 - `verify-compatibility.sh` descubre plataformas desde `platforms.txt` y compara cada herramienta con `platform-compatibility.txt`; devuelve exito, adaptador requerido o incompatibilidad antes de instalar. Agregar una plataforma no requiere modificar el script. `tests/test_compatibility.sh` demuestra esa extensibilidad con una plataforma ficticia.
 - `manage.sh validate` comprueba la estructura y consistencia cruzada de todos los manifiestos; `manage.sh audit` agrega la suite completa de regresion. Una herramienta nueva que requiera hooks o comandos propios tambien debe incorporar su provisionamiento en `install.sh` y sus pruebas.
@@ -316,6 +316,31 @@ Consideraciones:
 - Para cambiar de perfil, reemplazar el contenido de `~/.claude/CLAUDE.md` con el perfil deseado.
 - En Codex el instalador actualiza solo su bloque delimitado y preserva las instrucciones del usuario antes y después. Si los marcadores están corruptos, el archivo se conserva sin cambios; tampoco se reemplazan symlinks, directorios ni un `AGENTS.override.md` no vacío que pueda ocultar el archivo global.
 - Repositorio clonado en: `setup-ai-tools/claude-token-efficient`
+
+---
+
+### Consulta selectiva de claude-mem
+- Origen: regla propia en `rules/claude-mem-selective-recall.md`
+- Instalado en Claude: bloque administrado en `~/.claude/CLAUDE.md`
+- Instalado en Codex: bloque administrado en `$CODEX_HOME/AGENTS.md`
+- Alcance: global
+
+Regla que permite al agente invocar `mem-search` sin que el usuario tenga que
+pedirlo explicitamente, pero solo cuando la respuesta depende de sesiones
+anteriores, una tarea retomada carece de suficiente contexto, reaparece un
+problema o se necesita recuperar la razon de una decision historica.
+
+No se usa para la conversacion actual, conocimiento general, tareas nuevas bien
+definidas ni hechos verificables directamente en los archivos o en Git. La
+recuperacion sigue `search`, luego `timeline` si importa la cronologia y por
+ultimo obtiene solo las observaciones relevantes. Toda memoria se contrasta con
+las fuentes actuales y nunca se interpreta como autorizacion vigente para
+commits, pushes, despliegues, eliminaciones u otros efectos externos.
+
+Consideraciones:
+- No activa `CLAUDE_MEM_SEMANTIC_INJECT`; evita la inyeccion experimental en cada prompt.
+- El instalador conserva todo lo que este fuera de sus marcadores y se niega a modificar symlinks, directorios o archivos con marcadores administrados corruptos.
+- Para revertir, respalda el archivo global, elimina solo el bloque entre `# >>> setup-ai-tools: claude-mem-selective-recall >>>` y `# <<< setup-ai-tools: claude-mem-selective-recall <<<`, y reinicia la sesion. `install.sh` lo volvera a crear; para retirarlo permanentemente tambien hay que revertir el cambio del repo.
 
 ---
 

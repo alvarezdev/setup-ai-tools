@@ -23,6 +23,7 @@ Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copi
 ## Que contiene este repo
 
 - `skills/commit-style/`, `skills/graphify/` y `skills/cyber-neo/` - skills propios (Conventional Commits, exploracion de grafos y wrapper seguro de Cyber Neo)
+- `rules/` - reglas de comportamiento propias publicadas de forma administrada en los agentes
 - `adapters/codex/` - adaptadores propios de skills y workspace exclusivos de Codex
 - `PROJECT_INSTRUCTIONS.md` - fuente generica de instrucciones e inventario
 - `third-party-repos.txt` - manifiesto de repos de terceros (URL + commit)
@@ -57,7 +58,7 @@ Para generar solamente los archivos de instrucciones, sin clonar ni instalar her
 2. Verifica las herramientas declaradas para todas las plataformas seleccionadas.
 3. Crea los repos ausentes y reconcilia los existentes contra su URL y version declaradas.
 4. Instala en Claude y Codex los skills compatibles, sin sobrescribir instalaciones ajenas.
-5. Instala Graphify con `uv` y Python 3.12, publica sus skills propias para ambas plataformas, publica Cyber Neo solo para Claude, instala claude-mem para cada plataforma, arranca su worker y registra Context7.
+5. Instala Graphify con `uv` y Python 3.12, publica sus skills propias para ambas plataformas, publica Cyber Neo solo para Claude, instala claude-mem para cada plataforma, publica su regla de consulta selectiva, arranca el worker y registra Context7.
 
 Para proteger la base de datos de claude-mem, el instalador rechaza un pin menor
 que una versión ya presente en los cachés de Claude o Codex. Antes de actualizar,
@@ -74,6 +75,25 @@ referencia. `the-architect` se usa desde el workspace
 `adapters/codex/the-architect/`. Las reglas de `claude-token-efficient` se
 insertan en el bloque administrado de `$CODEX_HOME/AGENTS.md`, preservando las
 instrucciones del usuario que estén fuera de ese bloque.
+
+La regla propia `rules/claude-mem-selective-recall.md` se publica en bloques
+independientes de `~/.claude/CLAUDE.md` y `$CODEX_HOME/AGENTS.md`. Hace que el
+agente invoque `mem-search` por iniciativa propia solo cuando una respuesta
+dependa de sesiones anteriores, problemas recurrentes o decisiones historicas.
+No activa `CLAUDE_MEM_SEMANTIC_INJECT`, no consulta memoria en cada prompt y no
+trata una aprobacion antigua como autorizacion actual.
+
+Para revertirla, haz primero una copia del archivo global correspondiente y
+elimina unicamente el contenido comprendido entre estos marcadores, incluyendolos:
+
+```text
+# >>> setup-ai-tools: claude-mem-selective-recall >>>
+# <<< setup-ai-tools: claude-mem-selective-recall <<<
+```
+
+Reinicia la sesion del agente despues de retirarlos. Volver a ejecutar
+`install.sh` los publicara de nuevo; para una reversión permanente, revierte
+tambien en Git el cambio que incorporo la regla antes de reinstalar.
 
 Los archivos generados llevan una marca de administracion. Si encuentra un `CLAUDE.md` o `AGENTS.md` ajeno, cambios Git rastreados, un `origin` diferente, una carpeta real o un symlink que apunta a otra fuente, se detiene sin reemplazar ese elemento.
 

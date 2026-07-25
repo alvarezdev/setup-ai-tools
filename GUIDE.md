@@ -166,6 +166,37 @@ actualizar usa primero `./update.sh check` y luego `./update.sh apply`.
 spawn knowledge-agent to find decisions about the database schema
 ```
 
+`install.sh` publica además una regla selectiva para Claude y Codex. El agente
+debe invocar `mem-search` automaticamente cuando la tarea dependa de otra
+sesion, retome trabajo sin suficiente contexto, investigue un problema
+recurrente o necesite la razon de una decision anterior. No debe usarlo para
+informacion de la conversación actual, preguntas generales, tareas nuevas bien
+definidas ni hechos que pueda comprobar directamente en el repo o en Git.
+
+Cuando consulta memoria sigue `search` -> `timeline` cuando importa el orden ->
+observaciones completas solo para los resultados relevantes. Después contrasta
+lo recordado con las fuentes actuales. La memoria aporta contexto historico,
+pero nunca autoriza por si sola commits, pushes, despliegues, eliminaciones u
+otros efectos externos.
+
+### Revertir la regla selectiva
+
+La regla no modifica la base de datos de claude-mem. Para retirarla sin afectar
+otras instrucciones:
+
+1. Haz una copia de `~/.claude/CLAUDE.md` o de
+   `${CODEX_HOME:-$HOME/.codex}/AGENTS.md`, según la plataforma afectada.
+2. Elimina exclusivamente el bloque desde
+   `# >>> setup-ai-tools: claude-mem-selective-recall >>>` hasta
+   `# <<< setup-ai-tools: claude-mem-selective-recall <<<`, incluidos ambos
+   marcadores.
+3. Cierra la sesion del agente y abre una nueva para que relea sus instrucciones.
+
+El resto de las reglas personales queda fuera del bloque y se conserva. Una
+nueva ejecución de `install.sh` volvera a publicarlo. Para una reversión
+permanente, revierte en Git el cambio que introdujo
+`rules/claude-mem-selective-recall.md` y luego retira los bloques globales.
+
 ### Troubleshooting: `worker unreachable`
 
 Si un hook muestra `claude-mem worker unreachable for N consecutive hooks`,
