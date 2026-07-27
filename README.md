@@ -37,6 +37,8 @@ Este repo versiona **solo trabajo propio**. Los proyectos de terceros no se copi
 - `tests/` - pruebas de regresion y auditoria offline del instalador
 - `.gitignore` - ignora los directorios de terceros que clona `install.sh`
 
+> Terminologia: **manifiesto** (singular) siempre es `third-party-repos.txt`; **manifiestos** (plural) son los archivos que valida `manage.sh`: `third-party-repos.txt`, `platform-compatibility.txt`, `platforms.txt` y `tool-versions.env`.
+
 ## Uso en una maquina nueva
 
 La instalacion normal no necesita opciones. Los siguientes comandos quedan solo para mantenimiento o pruebas:

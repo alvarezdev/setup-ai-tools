@@ -47,6 +47,30 @@ NEWER_COMMIT="$(git -C "$SOURCE" rev-parse HEAD)"
 git clone -q --bare "$SOURCE" "$ORIGIN"
 git clone -q "$ORIGIN" "$PROJECT/superpowers"
 
+# Fixture agent-skills: repo pinned que expone las tres Vercel Agent Skills.
+# Las carpetas upstream (react-best-practices, composition-patterns) difieren del
+# nombre publicado en cada SKILL.md (vercel-*), asi que el fixture reproduce esa
+# diferencia para verificar que install.sh enlaza nombre-publicado -> carpeta.
+AGENT_SKILLS_SOURCE="$TMP/agent-skills-source"
+AGENT_SKILLS_ORIGIN="$TMP/agent-skills-origin.git"
+git init -q -b main "$AGENT_SKILLS_SOURCE"
+mkdir -p \
+  "$AGENT_SKILLS_SOURCE/skills/react-best-practices" \
+  "$AGENT_SKILLS_SOURCE/skills/composition-patterns" \
+  "$AGENT_SKILLS_SOURCE/skills/web-design-guidelines"
+printf '%s\n' '---' 'name: vercel-react-best-practices' '---' \
+  > "$AGENT_SKILLS_SOURCE/skills/react-best-practices/SKILL.md"
+printf '%s\n' '---' 'name: vercel-composition-patterns' '---' \
+  > "$AGENT_SKILLS_SOURCE/skills/composition-patterns/SKILL.md"
+printf '%s\n' '---' 'name: web-design-guidelines' '---' \
+  > "$AGENT_SKILLS_SOURCE/skills/web-design-guidelines/SKILL.md"
+git -C "$AGENT_SKILLS_SOURCE" add .
+git -C "$AGENT_SKILLS_SOURCE" -c user.name=Test -c user.email=test@example.com commit -q -m baseline
+AGENT_SKILLS_COMMIT="$(git -C "$AGENT_SKILLS_SOURCE" rev-parse HEAD)"
+git clone -q --bare "$AGENT_SKILLS_SOURCE" "$AGENT_SKILLS_ORIGIN"
+git clone -q "$AGENT_SKILLS_ORIGIN" "$PROJECT/agent-skills"
+git -C "$PROJECT/agent-skills" checkout -q --detach "$AGENT_SKILLS_COMMIT"
+
 mkdir -p \
   "$PROJECT/skills/commit-style" \
   "$PROJECT/skills/graphify" \
@@ -79,6 +103,7 @@ printf '%s\n' '# rules' > "$PROJECT/claude-token-efficient/CLAUDE.md"
 printf '%s\n' \
   '# fixture manifest' \
   "superpowers|$ORIGIN|main|$PINNED_COMMIT|pinned" \
+  "agent-skills|$AGENT_SKILLS_ORIGIN|main|$AGENT_SKILLS_COMMIT|pinned" \
   > "$PROJECT/third-party-repos.txt"
 
 printf '%s\n' \
@@ -140,6 +165,18 @@ assert_file_contains "$HOME_ONE/.claude/CLAUDE.md" "$MEMORY_END"
 [ -L "$HOME_ONE/.claude/skills/cyber-neo" ] || fail "Claude no recibio Cyber Neo"
 [ "$(readlink "$HOME_ONE/.claude/skills/cyber-neo")" = "$PROJECT/skills/cyber-neo" ] \
   || fail "Claude no enlazo el wrapper propio de Cyber Neo"
+[ -L "$HOME_ONE/.claude/skills/vercel-react-best-practices" ] \
+  || fail "Claude no recibio vercel-react-best-practices"
+[ "$(readlink "$HOME_ONE/.claude/skills/vercel-react-best-practices")" = "$PROJECT/agent-skills/skills/react-best-practices" ] \
+  || fail "Claude no enlazo vercel-react-best-practices a su carpeta upstream"
+[ -L "$HOME_ONE/.claude/skills/vercel-composition-patterns" ] \
+  || fail "Claude no recibio vercel-composition-patterns"
+[ "$(readlink "$HOME_ONE/.claude/skills/vercel-composition-patterns")" = "$PROJECT/agent-skills/skills/composition-patterns" ] \
+  || fail "Claude no enlazo vercel-composition-patterns a su carpeta upstream"
+[ -L "$HOME_ONE/.claude/skills/web-design-guidelines" ] \
+  || fail "Claude no recibio web-design-guidelines"
+[ "$(readlink "$HOME_ONE/.claude/skills/web-design-guidelines")" = "$PROJECT/agent-skills/skills/web-design-guidelines" ] \
+  || fail "Claude no enlazo web-design-guidelines a su carpeta upstream"
 assert_file_contains "$MOCK_LOG" "uv tool install --python 3.12 graphifyy==0.9.16"
 if grep -F 'graphify ' "$MOCK_LOG" >/dev/null; then
   fail "install.sh invoco un instalador upstream de Graphify"
@@ -219,6 +256,18 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX" CODEX_HOME="$HOME_CODEX/.codex" \
 [ -L "$HOME_CODEX/.codex/skills/abogado-del-diablo" ] || fail "Codex no recibio abogado-del-diablo"
 [ "$(readlink "$HOME_CODEX/.codex/skills/abogado-del-diablo")" = "$PROJECT/adapters/codex/abogado-del-diablo" ] \
   || fail "Codex no enlazo el adaptador abogado-del-diablo"
+[ -L "$HOME_CODEX/.codex/skills/vercel-react-best-practices" ] \
+  || fail "Codex no recibio vercel-react-best-practices"
+[ "$(readlink "$HOME_CODEX/.codex/skills/vercel-react-best-practices")" = "$PROJECT/agent-skills/skills/react-best-practices" ] \
+  || fail "Codex no enlazo vercel-react-best-practices a su carpeta upstream"
+[ -L "$HOME_CODEX/.codex/skills/vercel-composition-patterns" ] \
+  || fail "Codex no recibio vercel-composition-patterns"
+[ "$(readlink "$HOME_CODEX/.codex/skills/vercel-composition-patterns")" = "$PROJECT/agent-skills/skills/composition-patterns" ] \
+  || fail "Codex no enlazo vercel-composition-patterns a su carpeta upstream"
+[ -L "$HOME_CODEX/.codex/skills/web-design-guidelines" ] \
+  || fail "Codex no recibio web-design-guidelines"
+[ "$(readlink "$HOME_CODEX/.codex/skills/web-design-guidelines")" = "$PROJECT/agent-skills/skills/web-design-guidelines" ] \
+  || fail "Codex no enlazo web-design-guidelines a su carpeta upstream"
 [ ! -e "$HOME_CODEX/.claude/settings.json" ] || fail "instalar solo Codex modifico settings de Claude"
 assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 install --ide codex-cli"
 assert_file_contains "$HOME_CODEX/.codex/AGENTS.md" "$MEMORY_BEGIN"

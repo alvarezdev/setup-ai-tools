@@ -112,6 +112,34 @@ skill. El resultado es un archivo Markdown priorizado en la carpeta indicada.
 
 ---
 
+## Vercel Agent Skills
+
+Tres skills de ingeniería de Vercel (`vercel-labs/agent-skills`) enlazadas al
+commit fijado en `third-party-repos.txt` para Claude y Codex. Se activan por sus
+triggers al escribir, revisar o refactorizar React/Next.js o UI, o de forma
+explícita:
+
+```text
+/vercel-react-best-practices
+/vercel-composition-patterns
+/web-design-guidelines
+```
+
+- `vercel-react-best-practices`: rendimiento de React y Next.js (componentes,
+  data fetching, bundles).
+- `vercel-composition-patterns`: composición que escala (compound components,
+  render props, context, React 19).
+- `web-design-guidelines`: revisión de UI contra las Web Interface Guidelines
+  (accesibilidad y UX).
+
+El nombre publicado sale del campo `name:` de cada `SKILL.md` y difiere de la
+carpeta upstream (`react-best-practices`, `composition-patterns`). `install.sh`
+solo clona y enlaza estas tres carpetas; no ejecuta `npx skills`. Una
+instalación previa hecha con `npx skills` en la misma ruta se conserva y se
+reporta como destino ajeno.
+
+---
+
 ## Context7 (MCP)
 
 Trae documentacion actualizada de librerias y frameworks directo al contexto, evitando que Claude invente APIs o use ejemplos de versiones viejas. Se activa automaticamente al detectar preguntas sobre librerias; tambien se puede invocar explicito.

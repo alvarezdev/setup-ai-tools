@@ -19,3 +19,5 @@ claude-mem|claude|native|-|Plugin con hooks de Claude Code
 claude-mem|codex|native|-|Hooks nativos instalados automaticamente para Codex
 claude-token-efficient|claude|compatible|claude-token-efficient/CLAUDE.md|Reglas para CLAUDE.md global
 claude-token-efficient|codex|compatible|claude-token-efficient/CLAUDE.md|Reglas upstream insertadas en un bloque administrado de $CODEX_HOME/AGENTS.md
+agent-skills|claude|compatible|agent-skills/skills/react-best-practices/SKILL.md|Vercel Agent Skills upstream enlazadas con su nombre publicado (formato SKILL.md)
+agent-skills|codex|compatible|agent-skills/skills/react-best-practices/SKILL.md|Vercel Agent Skills upstream enlazadas con su nombre publicado (formato SKILL.md)

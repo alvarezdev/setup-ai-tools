@@ -470,6 +470,20 @@ validate_repo_source() {
   local dest="$2"
   local required
 
+  # agent-skills expone varias skills bajo skills/<carpeta>/SKILL.md; exigimos las
+  # tres que este proyecto publica para no enlazar una fuente incompleta.
+  if [ "$name" = "agent-skills" ]; then
+    local skill missing=0
+    for skill in react-best-practices composition-patterns web-design-guidelines; do
+      if [ ! -f "$dest/skills/$skill/SKILL.md" ]; then
+        echo "ERROR: agent-skills no contiene skills/$skill/SKILL.md" >&2
+        missing=1
+      fi
+    done
+    [ "$missing" -eq 0 ] || return 1
+    return 0
+  fi
+
   case "$name" in
     superpowers) required="skills/using-superpowers/SKILL.md" ;;
     prompt-master) required="SKILL.md" ;;
@@ -1038,6 +1052,9 @@ graphify|graphify|$BASE/skills/graphify
 cyber-neo|cyber-neo|$BASE/skills/cyber-neo
 prompt-master|prompt-master|$BASE/prompt-master
 abogado-del-diablo|abogado-del-diablo|$BASE/abogado-del-diablo/skills/abogado-del-diablo
+agent-skills|vercel-react-best-practices|$BASE/agent-skills/skills/react-best-practices
+agent-skills|web-design-guidelines|$BASE/agent-skills/skills/web-design-guidelines
+agent-skills|vercel-composition-patterns|$BASE/agent-skills/skills/composition-patterns
 superpowers|brainstorming|$SUPERPOWERS_CLAUDE_ROOT/skills/brainstorming
 superpowers|dispatching-parallel-agents|$SUPERPOWERS_CLAUDE_ROOT/skills/dispatching-parallel-agents
 superpowers|executing-plans|$SUPERPOWERS_CLAUDE_ROOT/skills/executing-plans
@@ -1172,6 +1189,9 @@ commit-style|commit-style|$BASE/skills/commit-style
 graphify|graphify|$BASE/skills/graphify
 prompt-master|prompt-master|$BASE/adapters/codex/prompt-master
 abogado-del-diablo|abogado-del-diablo|$BASE/adapters/codex/abogado-del-diablo
+agent-skills|vercel-react-best-practices|$BASE/agent-skills/skills/react-best-practices
+agent-skills|web-design-guidelines|$BASE/agent-skills/skills/web-design-guidelines
+agent-skills|vercel-composition-patterns|$BASE/agent-skills/skills/composition-patterns
 superpowers|brainstorming|$SUPERPOWERS_CODEX_ROOT/skills/brainstorming
 superpowers|dispatching-parallel-agents|$SUPERPOWERS_CODEX_ROOT/skills/dispatching-parallel-agents
 superpowers|executing-plans|$SUPERPOWERS_CODEX_ROOT/skills/executing-plans

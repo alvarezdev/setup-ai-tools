@@ -27,6 +27,10 @@ Este proyecto es la fuente de verdad para trazabilidad y portabilidad entre maqu
 
 Modelo de repo: este repo versiona **solo trabajo propio** (`skills/commit-style/`, `skills/graphify/`, `skills/cyber-neo/`, `rules/`, `adapters/codex/`, `PROJECT_INSTRUCTIONS.md`, `GUIDE.md`, `install.sh`, `manage.sh`, `update.sh`, `verify-compatibility.sh`, `platforms.txt`, `platform-compatibility.txt`, `tests/`, `README.md`, `third-party-repos.txt`, `tool-versions.env`, `.gitignore`). `PROJECT_INSTRUCTIONS.md` es la fuente generica; `install.sh` genera localmente el archivo que declara cada plataforma en `platforms.txt`, por ejemplo `CLAUDE.md` o `AGENTS.md`. Los repos de terceros NO se versionan: se referencian por URL + commit en `third-party-repos.txt` y los clona `install.sh`. El `.gitignore` ignora sus directorios (`superpowers/`, `prompt-master/`, etc.), lo que ademas evita que sus `.git` anidados se traten como submodules accidentales.
 
+Terminologia de este documento:
+- **manifiesto** (singular) siempre se refiere a `third-party-repos.txt`, el archivo que declara los repos de terceros que `install.sh` clona.
+- **manifiestos** (plural) se refiere al conjunto de archivos que valida `manage.sh validate`: `third-party-repos.txt`, `platform-compatibility.txt`, `platforms.txt` y `tool-versions.env` (mas `.gitignore`).
+
 Manifiesto `third-party-repos.txt` (formato `nombre|url|branch|commit|modo`):
 - `pinned` - clon completo + `checkout` al commit fijado (reproducible). Usado por superpowers, prompt-master, abogado-del-diablo, the-architect y cyber-neo.
 - `shallow` - `git clone --depth 1` del tip de la rama, sin fijar commit. Usado por context7 y claude-token-efficient (solo referencia; su version exacta no importa y evita traer los 45MB de historial de context7).
@@ -239,6 +243,30 @@ Consideraciones:
 - Solo se habilito para Claude porque el upstream usa tools y variables propias de Claude Code; Codex no recibe symlink ni declaracion de compatibilidad.
 - Semgrep, Trivy, Gitleaks, `npm audit`, `pip-audit` y `cargo-audit` son opcionales; no se instalan ni se ejecutan por el provisionamiento.
 - El informe puede contener rutas y evidencia de seguridad, pero debe mantener secretos redactados como exige el upstream.
+
+---
+
+### Vercel Agent Skills
+- Repositorio: https://github.com/vercel-labs/agent-skills
+- Commit fijado: ver la fila `agent-skills` (modo `pinned`) en `third-party-repos.txt`
+- Instalado en Claude y Codex: symlinks en `~/.claude/skills/<nombre>` y `$CODEX_HOME/skills/<nombre>` -> `setup-ai-tools/agent-skills/skills/<carpeta>`
+- Alcance: global
+
+Tres skills de ingenieria de Vercel que se publican bajo el nombre declarado en cada `SKILL.md`:
+- `vercel-react-best-practices` (carpeta upstream `react-best-practices`) - patrones de rendimiento para React y Next.js al escribir, revisar o refactorizar componentes, data fetching y bundles.
+- `vercel-composition-patterns` (carpeta upstream `composition-patterns`) - patrones de composicion en React que escalan: compound components, render props, context y APIs reutilizables. Incluye cambios de la API de React 19.
+- `web-design-guidelines` (carpeta upstream `web-design-guidelines`) - revision de UI contra las Web Interface Guidelines: accesibilidad, UX y buenas practicas de diseno web.
+
+Como invocarlas:
+- Automatico: se activan por sus triggers al escribir, revisar o refactorizar React/Next.js o UI.
+- Explicito: `/vercel-react-best-practices`, `/vercel-composition-patterns`, `/web-design-guidelines`.
+
+Consideraciones:
+- El upstream agrupa varias skills en un solo repo; este proyecto enlaza solo estas tres carpetas bajo `agent-skills/skills/`. El nombre publicado (`vercel-*` o `web-design-guidelines`) proviene del campo `name:` del `SKILL.md`, que difiere del nombre de la carpeta upstream.
+- `install.sh` reutiliza `reconcile_repo` para clonar o reconciliar el upstream al commit fijado; no ejecuta `npx skills`, no instala paquetes npm ni copia contenido de terceros.
+- La validacion de la fuente exige que las tres carpetas contengan su `SKILL.md`; si el upstream cambia de estructura, la instalacion se detiene antes de crear enlaces parciales.
+- Una instalacion global previa hecha con `npx skills` que ocupe las mismas rutas se conserva como destino ajeno: `install.sh` la reporta y no la reemplaza sin `--migrate-tool agent-skills`.
+- Repositorio clonado en: `setup-ai-tools/agent-skills` (ignorado por `.gitignore`).
 
 ---
 
