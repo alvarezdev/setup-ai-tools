@@ -302,6 +302,36 @@ local.
 
 ---
 
+## PagoKit (agente-pagokit)
+
+Plugin de Claude Code (`Hainrixz/agente-pagokit`) que genera integraciones de
+pagos completas: analiza el proyecto, hace 3 preguntas (pais, recurrencia,
+metodos locales) y recomienda entre Stripe, Mercado Pago, Wompi o Lemon
+Squeezy, con frontend, webhook firmado, schema de DB, portal de clientes y
+checklist de produccion. Enfocado en LATAM.
+
+Se clona en el commit fijado pero **no** se activa globalmente ni se
+symlinkea en `~/.claude/skills/`: sus hooks (`PreToolUse`/`PostToolUse`/`Stop`)
+corren sobre cualquier `Write`/`Edit`/`MultiEdit`, y activarlo en cada sesion
+afectaria proyectos que no tienen nada que ver con pagos. Se activa a mano,
+por proyecto:
+
+```bash
+cd <proyecto-que-necesita-pagos>
+claude --plugin-dir <ruta-a-setup-ai-tools>/agente-pagokit
+```
+
+Dentro de esa sesion:
+```text
+/pagokit:start
+/pagokit:test
+/pagokit:doctor
+```
+
+Requiere Node.js >= 18 y Claude Code 2.x. Sin soporte declarado para Codex.
+
+---
+
 ## claude-token-efficient
 
 No es una herramienta que se invoque: son reglas que reducen verbosidad (sin

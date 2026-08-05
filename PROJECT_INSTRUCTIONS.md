@@ -64,6 +64,7 @@ Limitaciones conocidas (no automatizadas todavia):
 - **claude-mem**: sus archivos viven en `~/.claude/plugins/marketplaces/thedotmack/` (con `node_modules` propios), no dentro de este repo. `install.sh` instala la version declarada en `tool-versions.env` y bloquea una degradacion frente a una version ya presente, porque podria ser incompatible con `~/.claude-mem/claude-mem.db`. `update.sh apply` es el unico flujo que la avanza automaticamente.
 - **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex. El aviso `could not create PATH aliases` al ejecutar `codex` dentro de un sandbox restringido no corresponde al MCP: se verifica desde una Terminal normal, sin filtrar `stderr` ni mover `CODEX_HOME` a `/tmp`.
 - **`the-architect`**: repo autocontenido para Claude en `the-architect/` y workspace adaptado para Codex en `adapters/codex/the-architect/`. No requiere symlink de skill, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
+- **`agente-pagokit`**: repo autocontenido para Claude en `agente-pagokit/`. No se registra como plugin global ni se symlinkea en `~/.claude/skills/`: solo se clona en el commit fijado para que el usuario lo active bajo demanda con `claude --plugin-dir` desde el proyecto que necesite integracion de pagos.
 - **Graphify**: el CLI y la skill quedan disponibles globalmente, pero el grafo no se crea ni se actualiza al abrir una sesion. Genera o actualiza el grafo bajo demanda; `graphify-out/` es local e ignorado. No se ejecutan los instaladores upstream `graphify install`, `graphify claude install` ni `graphify codex install`, porque escriben instrucciones y hooks con rutas absolutas y romperian esta fuente unica.
 - **Cyber Neo**: se publica solo para Claude; su upstream no se modifica. El wrapper propio crea `~/Documents/reports-cyber-neo/` solo al guardar el informe y nunca escribe dentro del proyecto auditado.
 
@@ -518,3 +519,33 @@ Consideraciones:
 - La memoria se acumula en `~/.claude-mem/` (local, no se sincroniza).
 - Conflicto de peer deps `tree-sitter` resuelto con `--legacy-peer-deps` en la instalacion (benigno).
 - Para desinstalar: `npx claude-mem uninstall` (cerrar todas las sesiones antes).
+
+---
+
+### PagoKit (agente-pagokit)
+- Repositorio: https://github.com/Hainrixz/agente-pagokit
+- Commit fijado: ver la fila `agente-pagokit` (modo `pinned`) en `third-party-repos.txt`
+- Instalado en Claude: solo se clona en `setup-ai-tools/agente-pagokit/`; no se registra como plugin global ni se symlinkea en `~/.claude/skills/`
+- Alcance: por proyecto, activado bajo demanda
+
+Plugin de Claude Code (`.claude-plugin/plugin.json`) que analiza el proyecto, hace 3 preguntas (pais, recurrencia, metodos locales) y genera una integracion de pagos completa: frontend, webhook con firma, schema de base de datos, portal de clientes y checklist de produccion. Cubre Stripe, Mercado Pago, Wompi y Lemon Squeezy, enfocado en LATAM.
+
+Componentes del plugin:
+- `commands/` - `/pagokit:start`, `/pagokit:test`, `/pagokit:doctor`
+- `skills/` - 5 skills (payment-advisor, project-analyzer, integration-builder con 47 templates, webhook-verifier, doctor)
+- `agents/` - subagente `integration-specialist`
+- `hooks/` - `pagokit-validate.js` dispatcher con 7 validadores (firma de webhook, llaves hardcodeadas, idempotencia, PII en logs, etc.) sobre `PreToolUse`/`PostToolUse`/`Stop`
+
+Como activarlo (invocacion propia del upstream, no automatizada por este proyecto):
+```bash
+cd <proyecto-que-necesita-pagos>
+claude --plugin-dir <ruta-a-setup-ai-tools>/agente-pagokit
+```
+Dentro de la sesion: `/pagokit:start`
+
+Consideraciones:
+- Decision de diseno: `claude plugin init` confirma que Claude Code puede autocargar un plugin completo symlinkeado en `~/.claude/skills/<nombre>` (patron `@skills-dir`). Se opto deliberadamente por NO symlinkearlo ahi, porque sus hooks se registran con matcher generico (`Write|Edit|MultiEdit`) sin acotar por proyecto: quedarian activos en cada sesion y cada archivo de cualquier proyecto, no solo en integraciones de pago. Esto sigue el mismo criterio que Graphify e Impeccable: nada de hooks globales automaticos para herramientas de terceros fuera de su alcance declarado.
+- `--plugin-dir` es la unica via de activacion: el hook queda inactivo hasta que el usuario decide abrir una sesion con el plugin cargado, y solo para esa sesion.
+- Requiere Node.js >= 18 (los validadores corren como subprocesos locales de Node) y Claude Code 2.x.
+- Sin soporte declarado para Codex; no se agrego adaptador.
+- Repositorio clonado en: `setup-ai-tools/agente-pagokit` (ignorado por `.gitignore`).

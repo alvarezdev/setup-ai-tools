@@ -15,3 +15,4 @@ context7|https://github.com/upstash/context7.git|master|-|shallow
 claude-token-efficient|https://github.com/drona23/claude-token-efficient.git|main|-|shallow
 ui-ux-pro-max-skill|https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git|main|4d140cf8ff6842de13213c7214eff3810371beb2|pinned
 impeccable|https://github.com/pbakaus/impeccable.git|main|ae5e95101a6979e7f7973a4ff57680b3c7adc1ec|pinned
+agente-pagokit|https://github.com/Hainrixz/agente-pagokit.git|main|5604807c1a14e3879b93b901160432cce43fa7f0|pinned
