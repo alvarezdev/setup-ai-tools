@@ -71,6 +71,36 @@ git clone -q --bare "$AGENT_SKILLS_SOURCE" "$AGENT_SKILLS_ORIGIN"
 git clone -q "$AGENT_SKILLS_ORIGIN" "$PROJECT/agent-skills"
 git -C "$PROJECT/agent-skills" checkout -q --detach "$AGENT_SKILLS_COMMIT"
 
+# Fixture ui-ux-pro-max-skill: repo pinned que expone 7 skills bajo .claude/skills/.
+UI_UX_PRO_MAX_SOURCE="$TMP/ui-ux-pro-max-skill-source"
+UI_UX_PRO_MAX_ORIGIN="$TMP/ui-ux-pro-max-skill-origin.git"
+git init -q -b main "$UI_UX_PRO_MAX_SOURCE"
+for skill in banner-design brand design-system design slides ui-styling ui-ux-pro-max; do
+  mkdir -p "$UI_UX_PRO_MAX_SOURCE/.claude/skills/$skill"
+  printf '%s\n' '---' "name: $skill" '---' \
+    > "$UI_UX_PRO_MAX_SOURCE/.claude/skills/$skill/SKILL.md"
+done
+git -C "$UI_UX_PRO_MAX_SOURCE" add .
+git -C "$UI_UX_PRO_MAX_SOURCE" -c user.name=Test -c user.email=test@example.com commit -q -m baseline
+UI_UX_PRO_MAX_COMMIT="$(git -C "$UI_UX_PRO_MAX_SOURCE" rev-parse HEAD)"
+git clone -q --bare "$UI_UX_PRO_MAX_SOURCE" "$UI_UX_PRO_MAX_ORIGIN"
+git clone -q "$UI_UX_PRO_MAX_ORIGIN" "$PROJECT/ui-ux-pro-max-skill"
+git -C "$PROJECT/ui-ux-pro-max-skill" checkout -q --detach "$UI_UX_PRO_MAX_COMMIT"
+
+# Fixture impeccable: repo pinned que expone un solo skill bajo .claude/skills/impeccable.
+IMPECCABLE_SOURCE="$TMP/impeccable-source"
+IMPECCABLE_ORIGIN="$TMP/impeccable-origin.git"
+git init -q -b main "$IMPECCABLE_SOURCE"
+mkdir -p "$IMPECCABLE_SOURCE/.claude/skills/impeccable"
+printf '%s\n' '---' 'name: impeccable' '---' \
+  > "$IMPECCABLE_SOURCE/.claude/skills/impeccable/SKILL.md"
+git -C "$IMPECCABLE_SOURCE" add .
+git -C "$IMPECCABLE_SOURCE" -c user.name=Test -c user.email=test@example.com commit -q -m baseline
+IMPECCABLE_COMMIT="$(git -C "$IMPECCABLE_SOURCE" rev-parse HEAD)"
+git clone -q --bare "$IMPECCABLE_SOURCE" "$IMPECCABLE_ORIGIN"
+git clone -q "$IMPECCABLE_ORIGIN" "$PROJECT/impeccable"
+git -C "$PROJECT/impeccable" checkout -q --detach "$IMPECCABLE_COMMIT"
+
 mkdir -p \
   "$PROJECT/skills/commit-style" \
   "$PROJECT/skills/graphify" \
@@ -104,6 +134,8 @@ printf '%s\n' \
   '# fixture manifest' \
   "superpowers|$ORIGIN|main|$PINNED_COMMIT|pinned" \
   "agent-skills|$AGENT_SKILLS_ORIGIN|main|$AGENT_SKILLS_COMMIT|pinned" \
+  "ui-ux-pro-max-skill|$UI_UX_PRO_MAX_ORIGIN|main|$UI_UX_PRO_MAX_COMMIT|pinned" \
+  "impeccable|$IMPECCABLE_ORIGIN|main|$IMPECCABLE_COMMIT|pinned" \
   > "$PROJECT/third-party-repos.txt"
 
 printf '%s\n' \
@@ -177,6 +209,14 @@ assert_file_contains "$HOME_ONE/.claude/CLAUDE.md" "$MEMORY_END"
   || fail "Claude no recibio web-design-guidelines"
 [ "$(readlink "$HOME_ONE/.claude/skills/web-design-guidelines")" = "$PROJECT/agent-skills/skills/web-design-guidelines" ] \
   || fail "Claude no enlazo web-design-guidelines a su carpeta upstream"
+for skill in banner-design brand design-system design slides ui-styling ui-ux-pro-max; do
+  [ -L "$HOME_ONE/.claude/skills/$skill" ] || fail "Claude no recibio $skill (ui-ux-pro-max-skill)"
+  [ "$(readlink "$HOME_ONE/.claude/skills/$skill")" = "$PROJECT/ui-ux-pro-max-skill/.claude/skills/$skill" ] \
+    || fail "Claude no enlazo $skill a su carpeta upstream"
+done
+[ -L "$HOME_ONE/.claude/skills/impeccable" ] || fail "Claude no recibio impeccable"
+[ "$(readlink "$HOME_ONE/.claude/skills/impeccable")" = "$PROJECT/impeccable/.claude/skills/impeccable" ] \
+  || fail "Claude no enlazo impeccable a su carpeta upstream"
 assert_file_contains "$MOCK_LOG" "uv tool install --python 3.12 graphifyy==0.9.16"
 if grep -F 'graphify ' "$MOCK_LOG" >/dev/null; then
   fail "install.sh invoco un instalador upstream de Graphify"
@@ -268,6 +308,12 @@ PATH="$MOCK_BIN:$PATH" HOME="$HOME_CODEX" CODEX_HOME="$HOME_CODEX/.codex" \
   || fail "Codex no recibio web-design-guidelines"
 [ "$(readlink "$HOME_CODEX/.codex/skills/web-design-guidelines")" = "$PROJECT/agent-skills/skills/web-design-guidelines" ] \
   || fail "Codex no enlazo web-design-guidelines a su carpeta upstream"
+for skill in banner-design brand design-system design slides ui-styling ui-ux-pro-max; do
+  [ -L "$HOME_CODEX/.codex/skills/$skill" ] || fail "Codex no recibio $skill (ui-ux-pro-max-skill)"
+  [ "$(readlink "$HOME_CODEX/.codex/skills/$skill")" = "$PROJECT/ui-ux-pro-max-skill/.claude/skills/$skill" ] \
+    || fail "Codex no enlazo $skill a su carpeta upstream"
+done
+[ ! -e "$HOME_CODEX/.codex/skills/impeccable" ] || fail "Codex recibio Impeccable sin soporte declarado"
 [ ! -e "$HOME_CODEX/.claude/settings.json" ] || fail "instalar solo Codex modifico settings de Claude"
 assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 install --ide codex-cli"
 assert_file_contains "$HOME_CODEX/.codex/AGENTS.md" "$MEMORY_BEGIN"

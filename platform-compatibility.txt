@@ -21,3 +21,6 @@ claude-token-efficient|claude|compatible|claude-token-efficient/CLAUDE.md|Reglas
 claude-token-efficient|codex|compatible|claude-token-efficient/CLAUDE.md|Reglas upstream insertadas en un bloque administrado de $CODEX_HOME/AGENTS.md
 agent-skills|claude|compatible|agent-skills/skills/react-best-practices/SKILL.md|Vercel Agent Skills upstream enlazadas con su nombre publicado (formato SKILL.md)
 agent-skills|codex|compatible|agent-skills/skills/react-best-practices/SKILL.md|Vercel Agent Skills upstream enlazadas con su nombre publicado (formato SKILL.md)
+ui-ux-pro-max-skill|claude|compatible|ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md|Familia de 7 skills estaticas (SKILL.md + referencias/datos locales), sin instalador propio
+ui-ux-pro-max-skill|codex|compatible|ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md|Mismo formato SKILL.md sin herramientas exclusivas de Claude
+impeccable|claude|compatible|impeccable/.claude/skills/impeccable/SKILL.md|Wrapper propio: solo el skill global; hooks y CLI de deteccion por proyecto quedan fuera del alcance

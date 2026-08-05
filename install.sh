@@ -484,6 +484,19 @@ validate_repo_source() {
     return 0
   fi
 
+  # ui-ux-pro-max-skill expone 7 skills bajo .claude/skills/<carpeta>/SKILL.md.
+  if [ "$name" = "ui-ux-pro-max-skill" ]; then
+    local skill missing=0
+    for skill in banner-design brand design-system design slides ui-styling ui-ux-pro-max; do
+      if [ ! -f "$dest/.claude/skills/$skill/SKILL.md" ]; then
+        echo "ERROR: ui-ux-pro-max-skill no contiene .claude/skills/$skill/SKILL.md" >&2
+        missing=1
+      fi
+    done
+    [ "$missing" -eq 0 ] || return 1
+    return 0
+  fi
+
   case "$name" in
     superpowers) required="skills/using-superpowers/SKILL.md" ;;
     prompt-master) required="SKILL.md" ;;
@@ -491,6 +504,7 @@ validate_repo_source() {
     the-architect) required="CLAUDE.md" ;;
     context7) required="packages/mcp/package.json" ;;
     claude-token-efficient) required="CLAUDE.md" ;;
+    impeccable) required=".claude/skills/impeccable/SKILL.md" ;;
     *) required="README.md" ;;
   esac
 
@@ -1055,6 +1069,14 @@ abogado-del-diablo|abogado-del-diablo|$BASE/abogado-del-diablo/skills/abogado-de
 agent-skills|vercel-react-best-practices|$BASE/agent-skills/skills/react-best-practices
 agent-skills|web-design-guidelines|$BASE/agent-skills/skills/web-design-guidelines
 agent-skills|vercel-composition-patterns|$BASE/agent-skills/skills/composition-patterns
+ui-ux-pro-max-skill|banner-design|$BASE/ui-ux-pro-max-skill/.claude/skills/banner-design
+ui-ux-pro-max-skill|brand|$BASE/ui-ux-pro-max-skill/.claude/skills/brand
+ui-ux-pro-max-skill|design-system|$BASE/ui-ux-pro-max-skill/.claude/skills/design-system
+ui-ux-pro-max-skill|design|$BASE/ui-ux-pro-max-skill/.claude/skills/design
+ui-ux-pro-max-skill|slides|$BASE/ui-ux-pro-max-skill/.claude/skills/slides
+ui-ux-pro-max-skill|ui-styling|$BASE/ui-ux-pro-max-skill/.claude/skills/ui-styling
+ui-ux-pro-max-skill|ui-ux-pro-max|$BASE/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max
+impeccable|impeccable|$BASE/impeccable/.claude/skills/impeccable
 superpowers|brainstorming|$SUPERPOWERS_CLAUDE_ROOT/skills/brainstorming
 superpowers|dispatching-parallel-agents|$SUPERPOWERS_CLAUDE_ROOT/skills/dispatching-parallel-agents
 superpowers|executing-plans|$SUPERPOWERS_CLAUDE_ROOT/skills/executing-plans
@@ -1192,6 +1214,13 @@ abogado-del-diablo|abogado-del-diablo|$BASE/adapters/codex/abogado-del-diablo
 agent-skills|vercel-react-best-practices|$BASE/agent-skills/skills/react-best-practices
 agent-skills|web-design-guidelines|$BASE/agent-skills/skills/web-design-guidelines
 agent-skills|vercel-composition-patterns|$BASE/agent-skills/skills/composition-patterns
+ui-ux-pro-max-skill|banner-design|$BASE/ui-ux-pro-max-skill/.claude/skills/banner-design
+ui-ux-pro-max-skill|brand|$BASE/ui-ux-pro-max-skill/.claude/skills/brand
+ui-ux-pro-max-skill|design-system|$BASE/ui-ux-pro-max-skill/.claude/skills/design-system
+ui-ux-pro-max-skill|design|$BASE/ui-ux-pro-max-skill/.claude/skills/design
+ui-ux-pro-max-skill|slides|$BASE/ui-ux-pro-max-skill/.claude/skills/slides
+ui-ux-pro-max-skill|ui-styling|$BASE/ui-ux-pro-max-skill/.claude/skills/ui-styling
+ui-ux-pro-max-skill|ui-ux-pro-max|$BASE/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max
 superpowers|brainstorming|$SUPERPOWERS_CODEX_ROOT/skills/brainstorming
 superpowers|dispatching-parallel-agents|$SUPERPOWERS_CODEX_ROOT/skills/dispatching-parallel-agents
 superpowers|executing-plans|$SUPERPOWERS_CODEX_ROOT/skills/executing-plans
@@ -1310,7 +1339,8 @@ cat <<'EOF'
 
 ==> Nota de versiones (importante en una maquina nueva):
   - Repos 'pinned' (superpowers, prompt-master, abogado-del-diablo,
-    the-architect, cyber-neo): quedan en el commit exacto fijado en third-party-repos.txt.
+    the-architect, cyber-neo, agent-skills, ui-ux-pro-max-skill, impeccable):
+    quedan en el commit exacto fijado en third-party-repos.txt.
     Reproducibles: la maquina nueva tiene la misma version que la anterior.
   - Repos 'shallow' (context7, claude-token-efficient): traen el ULTIMO estado
     de la rama al momento de correr este script, NO una version fija. Si el

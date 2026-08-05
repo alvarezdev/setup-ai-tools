@@ -140,6 +140,51 @@ reporta como destino ajeno.
 
 ---
 
+## UI UX Pro Max
+
+Siete skills de inteligencia de diseño (`nextlevelbuilder/ui-ux-pro-max-skill`)
+enlazadas al commit fijado, para Claude y Codex:
+
+```text
+/ui-ux-pro-max
+/design
+/design-system
+/brand
+/banner-design
+/slides
+/ui-styling
+```
+
+`ui-ux-pro-max` es la base de datos consultable (estilos, paletas, tipografía,
+guías UX, iconos, animación, gráficos); las otras seis cubren marca, sistema
+de tokens, banners, slides y componentes shadcn/ui. `install.sh` solo clona y
+enlaza `.claude/skills/<carpeta>`; no ejecuta `npx ui-ux-pro-max-cli`. Algunas
+funciones de generación de logos/iconos usan la API de Gemini (credenciales
+propias del usuario, no provisionadas aquí).
+
+---
+
+## Impeccable (Claude)
+
+Guía de diseño para agentes de codificación (`pbakaus/impeccable`), enlazada
+solo para Claude:
+
+```text
+/impeccable init
+/impeccable audit <target>
+/impeccable critique <target>
+/impeccable polish <target>
+```
+
+Solo se enlaza la carpeta del skill (comandos + reglas de detección). No se
+instala el detector automático (`PostToolUse`/`Stop` en `.claude/settings.json`,
+requiere Node 22+ y copiar el skill dentro de cada proyecto), ni el modo `live`
+de iteración visual en navegador, ni el marketplace de plugins. Para esas
+piezas por-proyecto, corre `npx impeccable install` dentro del proyecto que lo
+necesite.
+
+---
+
 ## Context7 (MCP)
 
 Trae documentacion actualizada de librerias y frameworks directo al contexto, evitando que Claude invente APIs o use ejemplos de versiones viejas. Se activa automaticamente al detectar preguntas sobre librerias; tambien se puede invocar explicito.

@@ -270,6 +270,59 @@ Consideraciones:
 
 ---
 
+### UI UX Pro Max
+- Repositorio: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+- Commit fijado: ver la fila `ui-ux-pro-max-skill` (modo `pinned`) en `third-party-repos.txt`
+- Instalado en Claude y Codex: symlinks en `~/.claude/skills/<nombre>` y `$CODEX_HOME/skills/<nombre>` -> `setup-ai-tools/ui-ux-pro-max-skill/.claude/skills/<carpeta>`
+- Alcance: global
+
+Siete skills de inteligencia de diseno UI/UX, cada una con su propio `SKILL.md` y datos/referencias autocontenidos:
+- `ui-ux-pro-max` - base de datos consultable con 84 estilos UI, 192 paletas de color, 74 combinaciones tipograficas, 98 guias UX, 104 iconos, 16 presets de animacion GSAP y 25 tipos de grafico, sobre 22 stacks tecnologicos.
+- `design` - skill integral: identidad de marca, tokens de diseno, logos (55 estilos, Gemini AI), programa de identidad corporativa, presentaciones HTML, banners, iconos SVG y fotos sociales.
+- `design-system` - arquitectura de tokens en tres capas (primitivo -> semantico -> componente), especificaciones de componentes y generacion de slides.
+- `brand` - voz de marca, identidad visual, mensajeria y consistencia de marca.
+- `banner-design` - banners para redes sociales, ads, heroes de sitio web y print con multiples direcciones de arte.
+- `slides` - presentaciones HTML estrategicas con Chart.js, tokens de diseno y formulas de copywriting.
+- `ui-styling` - interfaces con shadcn/ui (Radix + Tailwind), diseños canvas y patrones de accesibilidad.
+
+Como invocarlas:
+- Automatico: se activan por sus triggers al disenar, construir o revisar UI/UX.
+- Explicito: `/ui-ux-pro-max`, `/design`, `/design-system`, `/brand`, `/banner-design`, `/slides`, `/ui-styling`.
+
+Consideraciones:
+- El upstream agrupa las 7 skills bajo `.claude/skills/`; este proyecto enlaza esa carpeta completa, no ejecuta el instalador propio (`npx ui-ux-pro-max-cli`) ni copia contenido de terceros.
+- La validacion de la fuente exige las 7 carpetas con su `SKILL.md`; si el upstream cambia de estructura, la instalacion se detiene antes de crear enlaces parciales.
+- Algunas funciones de `design`/`banner-design` (generacion de logos e iconos) usan la API de Gemini; requieren credenciales propias del usuario que este proyecto no provisiona.
+- Repositorio clonado en: `setup-ai-tools/ui-ux-pro-max-skill` (ignorado por `.gitignore`).
+
+---
+
+### Impeccable
+- Repositorio: https://github.com/pbakaus/impeccable
+- Commit fijado: ver la fila `impeccable` (modo `pinned`) en `third-party-repos.txt`
+- Instalado en Claude: symlink en `~/.claude/skills/impeccable` -> `setup-ai-tools/impeccable/.claude/skills/impeccable`
+- Alcance: global en Claude; sin soporte publicado para Codex
+
+Skill de guia de diseno para agentes de codificacion IA: 23 comandos (`/impeccable polish`, `/impeccable audit`, `/impeccable critique`, etc.) y 59 reglas deterministas de deteccion de anti-patrones (fuentes sobreusadas, texto gris sobre fondo de color, cards anidadas, easing rebotante, etc.).
+
+Como invocarlo:
+```text
+/impeccable init            # setup: genera PRODUCT.md y DESIGN.md en el proyecto destino
+/impeccable audit blog      # revisa accesibilidad, performance, responsive
+/impeccable critique landing
+/impeccable polish settings
+```
+
+Consideraciones:
+- Este proyecto enlaza unicamente la carpeta del skill (`SKILL.md` + `scripts/` + `reference/`), autocontenida y disenada para funcionar desde un directorio de skill global (el propio `SKILL.md` indica ejecutar `node <skill-base-dir>/scripts/context.mjs` manteniendo el `cwd` en el proyecto del usuario).
+- No se instala el detector automatico: el upstream agrega hooks `PostToolUse`/`Stop` en `.claude/settings.json` que referencian `${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/hook.mjs` y requiere Node 22+; eso implica copiar el skill dentro de cada proyecto y modificar su `settings.json`, algo que este instalador no hace por proyecto (mismo criterio que Graphify: no rutas absolutas ni hooks fuera del alcance global).
+- Tampoco se ejecuta `npx impeccable install`, ni el modo `live` (iteracion visual en navegador con servidor local), ni se registra el marketplace de plugins de Claude Code.
+- Los comandos base (`init`, `audit`, `critique`, `polish`, etc.) funcionan sin el detector automatico ni el modo `live`; si el usuario quiere el detector por-proyecto o `live`, debe correr `npx impeccable install` dentro de ese proyecto especifico.
+- Solo se publico para Claude porque el upstream usa `allowed-tools` y variables (`CLAUDE_PROJECT_DIR`) propias de Claude Code; Codex requeriria el bundle `.agents` separado que el upstream distribuye aparte.
+- Repositorio clonado en: `setup-ai-tools/impeccable` (ignorado por `.gitignore`).
+
+---
+
 ## MCP Servers
 
 Servidores registrados con los comandos MCP nativos de cada plataforma. Ver alcance de cada uno abajo.
