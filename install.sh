@@ -506,6 +506,7 @@ validate_repo_source() {
     claude-token-efficient) required="CLAUDE.md" ;;
     impeccable) required=".claude/skills/impeccable/SKILL.md" ;;
     agente-pagokit) required=".claude-plugin/plugin.json" ;;
+    claude-seo-ai) required=".claude-plugin/plugin.json" ;;
     *) required="README.md" ;;
   esac
 
@@ -1341,7 +1342,8 @@ cat <<'EOF'
 ==> Nota de versiones (importante en una maquina nueva):
   - Repos 'pinned' (superpowers, prompt-master, abogado-del-diablo,
     the-architect, cyber-neo, agent-skills, ui-ux-pro-max-skill, impeccable,
-    agente-pagokit): quedan en el commit exacto fijado en third-party-repos.txt.
+    agente-pagokit, claude-seo-ai): quedan en el commit exacto fijado en
+    third-party-repos.txt.
     Reproducibles: la maquina nueva tiene la misma version que la anterior.
   - Repos 'shallow' (context7, claude-token-efficient): traen el ULTIMO estado
     de la rama al momento de correr este script, NO una version fija. Si el

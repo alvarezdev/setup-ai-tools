@@ -332,6 +332,38 @@ Requiere Node.js >= 18 y Claude Code 2.x. Sin soporte declarado para Codex.
 
 ---
 
+## Claude SEO AI (claude-seo-ai)
+
+Plugin de Claude Code (`Hainrixz/claude-seo-ai`) que audita un sitio o codebase
+web en dos ejes independientes: SEO clasico y AI Visibility (GEO/AEO), cada
+uno con un score 0-100. Detecta el vertical del sitio y corre auditorias
+especialistas en paralelo (crawlability, schema JSON-LD, Core Web Vitals,
+E-E-A-T, internacional, e-commerce, local, etc.). Offline-first, sin API keys
+requeridas.
+
+Se clona en el commit fijado pero **no** se activa globalmente ni se
+symlinkea en `~/.claude/skills/`: su hook `PreToolUse` corre sobre cualquier
+`Write`/`Edit`, y activarlo en cada sesion afectaria proyectos que no tienen
+nada que ver con SEO. Se activa a mano, por proyecto:
+
+```bash
+cd <proyecto-a-auditar>
+claude --plugin-dir <ruta-a-setup-ai-tools>/claude-seo-ai
+```
+
+Dentro de esa sesion:
+```text
+/claude-seo-ai:audit <url|ruta>
+/claude-seo-ai:geo <url|ruta>
+/claude-seo-ai:score
+/claude-seo-ai:fix <url|ruta> [--dry-run]
+```
+
+Solo `/fix` puede escribir, y siempre pide confirmacion antes de aplicar
+cambios. Requiere Node.js >= 18 (opcional). Sin soporte declarado para Codex.
+
+---
+
 ## claude-token-efficient
 
 No es una herramienta que se invoque: son reglas que reducen verbosidad (sin

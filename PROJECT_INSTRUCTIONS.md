@@ -65,6 +65,7 @@ Limitaciones conocidas (no automatizadas todavia):
 - **Context7**: se registra como MCP de usuario en cada plataforma detectada; `install.sh` usa los comandos nativos de Claude y Codex. El aviso `could not create PATH aliases` al ejecutar `codex` dentro de un sandbox restringido no corresponde al MCP: se verifica desde una Terminal normal, sin filtrar `stderr` ni mover `CODEX_HOME` a `/tmp`.
 - **`the-architect`**: repo autocontenido para Claude en `the-architect/` y workspace adaptado para Codex en `adapters/codex/the-architect/`. No requiere symlink de skill, pero si esta en el manifiesto para que `install.sh` lo clone en la maquina nueva.
 - **`agente-pagokit`**: repo autocontenido para Claude en `agente-pagokit/`. No se registra como plugin global ni se symlinkea en `~/.claude/skills/`: solo se clona en el commit fijado para que el usuario lo active bajo demanda con `claude --plugin-dir` desde el proyecto que necesite integracion de pagos.
+- **`claude-seo-ai`**: repo autocontenido para Claude en `claude-seo-ai/`. Mismo criterio que `agente-pagokit`: su hook `PreToolUse` usa un matcher generico (`Write|Edit`) sin acotar por proyecto, asi que no se registra como plugin global ni se symlinkea en `~/.claude/skills/`; se clona en el commit fijado y el usuario lo activa bajo demanda con `claude --plugin-dir` desde el proyecto que necesite auditoria SEO/GEO.
 - **Graphify**: el CLI y la skill quedan disponibles globalmente, pero el grafo no se crea ni se actualiza al abrir una sesion. Genera o actualiza el grafo bajo demanda; `graphify-out/` es local e ignorado. No se ejecutan los instaladores upstream `graphify install`, `graphify claude install` ni `graphify codex install`, porque escriben instrucciones y hooks con rutas absolutas y romperian esta fuente unica.
 - **Cyber Neo**: se publica solo para Claude; su upstream no se modifica. El wrapper propio crea `~/Documents/reports-cyber-neo/` solo al guardar el informe y nunca escribe dentro del proyecto auditado.
 
@@ -549,3 +550,36 @@ Consideraciones:
 - Requiere Node.js >= 18 (los validadores corren como subprocesos locales de Node) y Claude Code 2.x.
 - Sin soporte declarado para Codex; no se agrego adaptador.
 - Repositorio clonado en: `setup-ai-tools/agente-pagokit` (ignorado por `.gitignore`).
+
+---
+
+### Claude SEO AI (claude-seo-ai)
+- Repositorio: https://github.com/Hainrixz/claude-seo-ai
+- Commit fijado: ver la fila `claude-seo-ai` (modo `pinned`) en `third-party-repos.txt`
+- Instalado en Claude: solo se clona en `setup-ai-tools/claude-seo-ai/`; no se registra como plugin global ni se symlinkea en `~/.claude/skills/`
+- Alcance: por proyecto, activado bajo demanda
+- Version: 0.1.0
+
+Plugin de Claude Code (`.claude-plugin/plugin.json`) que audita un sitio o codebase web en dos ejes independientes: SEO clasico (busqueda) y AI Visibility (GEO/AEO, optimizacion para motores generativos y de respuesta), cada uno con un score 0-100 y letra. Detecta el vertical del sitio (SaaS, blog, negocio local, e-commerce, docs) y corre auditorias especialistas en paralelo. Es offline-first (Tier 0, sin API keys) y ofrece renderizado y Core Web Vitals reales opcionales via MCPs Tier 1+.
+
+Componentes del plugin:
+- `skills/` - 4 skills de comando (`audit`, `fix`, `geo`, `score`) mas ~20 skills especialistas de auditoria (`seo-crawlability`, `seo-schema-jsonld`, `seo-core-web-vitals`, `seo-geo-answerblocks`, `seo-eeat`, `seo-local`, `seo-ecommerce`, etc.) orquestadas por `seo-orchestrator`
+- `agents/` - 5 subagentes: `technical-auditor`, `content-eeat-analyst`, `ai-search-geo-specialist`, `schema-generator`, `seo-fixer-writer` (el unico con permiso de escritura)
+- `hooks/` - `scripts/guard-write.mjs` sobre `PreToolUse` sobre `Write|Edit`: bloquea escrituras salvo que provengan del comando `/fix` explicito
+- `scripts/` - helpers Node sin dependencias para parseo HTML, validacion JSON-LD y scoring
+- `.mcp.json.example` - plantilla opcional para conectar MCPs Tier 1+ (renderizado, Core Web Vitals reales)
+
+Como activarlo (invocacion propia del upstream, no automatizada por este proyecto):
+```bash
+cd <proyecto-a-auditar>
+claude --plugin-dir <ruta-a-setup-ai-tools>/claude-seo-ai
+```
+Dentro de la sesion: `/claude-seo-ai:audit <url|ruta>`, `/claude-seo-ai:geo <url|ruta>`, `/claude-seo-ai:score`, `/claude-seo-ai:fix <url|ruta>` (con `--dry-run` disponible; siempre pide confirmacion antes de escribir).
+
+Consideraciones:
+- Mismo criterio de diseno que `agente-pagokit`: su hook `PreToolUse` matchea `Write|Edit` sin acotar por proyecto, asi que symlinkearlo en `~/.claude/skills/` lo activaria en cada sesion y cada archivo de cualquier proyecto, no solo en auditorias SEO. Se opto deliberadamente por NO hacerlo.
+- `--plugin-dir` es la unica via de activacion: el hook queda inactivo hasta que el usuario decide abrir una sesion con el plugin cargado, y solo para esa sesion.
+- Todas las auditorias (`audit`, `geo`, `score`) son de solo lectura; unicamente `/fix` puede escribir, y el hook `guard-write.mjs` es la barrera tecnica que lo garantiza.
+- Requiere Node.js >= 18 (opcional, mejora precision de los scripts); el plugin corre sin `npm install` con dependencias cero en su nucleo.
+- Sin soporte declarado para Codex; no se agrego adaptador (el plugin usa `$CLAUDE_PLUGIN_ROOT` y el mecanismo de hooks propio de Claude Code).
+- Repositorio clonado en: `setup-ai-tools/claude-seo-ai` (ignorado por `.gitignore`).

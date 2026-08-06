@@ -25,3 +25,4 @@ ui-ux-pro-max-skill|claude|compatible|ui-ux-pro-max-skill/.claude/skills/ui-ux-p
 ui-ux-pro-max-skill|codex|compatible|ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md|Mismo formato SKILL.md sin herramientas exclusivas de Claude
 impeccable|claude|compatible|impeccable/.claude/skills/impeccable/SKILL.md|Wrapper propio: solo el skill global; hooks y CLI de deteccion por proyecto quedan fuera del alcance
 agente-pagokit|claude|native|agente-pagokit/.claude-plugin/plugin.json|Plugin de Claude Code (hooks + comandos + subagente propios); se clona como referencia pinned y se activa por sesion con --plugin-dir, sin registro global ni symlink en ~/.claude/skills/
+claude-seo-ai|claude|native|claude-seo-ai/.claude-plugin/plugin.json|Plugin de Claude Code (hooks + skills + 5 subagentes propios); se clona como referencia pinned y se activa por sesion con --plugin-dir, sin registro global ni symlink en ~/.claude/skills/

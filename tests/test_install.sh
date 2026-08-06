@@ -114,7 +114,8 @@ mkdir -p \
   "$PROJECT/context7/plugins/codex/context7/skills/context7-mcp" \
   "$PROJECT/the-architect" \
   "$PROJECT/claude-token-efficient" \
-  "$PROJECT/agente-pagokit/.claude-plugin"
+  "$PROJECT/agente-pagokit/.claude-plugin" \
+  "$PROJECT/claude-seo-ai/.claude-plugin"
 printf '%s\n' '# skill' > "$PROJECT/skills/commit-style/SKILL.md"
 printf '%s\n' '# graphify wrapper' > "$PROJECT/skills/graphify/SKILL.md"
 printf '%s\n' '# cyber neo wrapper' > "$PROJECT/skills/cyber-neo/SKILL.md"
@@ -131,6 +132,7 @@ printf '%s\n' '# context7' > "$PROJECT/context7/plugins/codex/context7/skills/co
 printf '%s\n' '# architect' > "$PROJECT/the-architect/CLAUDE.md"
 printf '%s\n' '# rules' > "$PROJECT/claude-token-efficient/CLAUDE.md"
 printf '%s\n' '{"name":"pagokit"}' > "$PROJECT/agente-pagokit/.claude-plugin/plugin.json"
+printf '%s\n' '{"name":"claude-seo-ai"}' > "$PROJECT/claude-seo-ai/.claude-plugin/plugin.json"
 
 printf '%s\n' \
   '# fixture manifest' \
@@ -221,6 +223,8 @@ done
   || fail "Claude no enlazo impeccable a su carpeta upstream"
 [ ! -e "$HOME_ONE/.claude/skills/agente-pagokit" ] && [ ! -e "$HOME_ONE/.claude/skills/pagokit" ] \
   || fail "agente-pagokit no debe symlinkearse globalmente (activacion solo via --plugin-dir)"
+[ ! -e "$HOME_ONE/.claude/skills/claude-seo-ai" ] \
+  || fail "claude-seo-ai no debe symlinkearse globalmente (activacion solo via --plugin-dir)"
 assert_file_contains "$MOCK_LOG" "uv tool install --python 3.12 graphifyy==0.9.16"
 if grep -F 'graphify ' "$MOCK_LOG" >/dev/null; then
   fail "install.sh invoco un instalador upstream de Graphify"
@@ -320,6 +324,8 @@ done
 [ ! -e "$HOME_CODEX/.codex/skills/impeccable" ] || fail "Codex recibio Impeccable sin soporte declarado"
 [ ! -e "$HOME_CODEX/.codex/skills/agente-pagokit" ] && [ ! -e "$HOME_CODEX/.codex/skills/pagokit" ] \
   || fail "Codex recibio agente-pagokit sin soporte declarado"
+[ ! -e "$HOME_CODEX/.codex/skills/claude-seo-ai" ] \
+  || fail "Codex recibio claude-seo-ai sin soporte declarado"
 [ ! -e "$HOME_CODEX/.claude/settings.json" ] || fail "instalar solo Codex modifico settings de Claude"
 assert_file_contains "$MOCK_LOG" "claude-mem@13.12.4 install --ide codex-cli"
 assert_file_contains "$HOME_CODEX/.codex/AGENTS.md" "$MEMORY_BEGIN"
